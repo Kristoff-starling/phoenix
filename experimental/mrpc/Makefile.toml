@@ -51,7 +51,7 @@ description = '''
 Build mRPC example apps under the `examples/` directory.
 '''
 script = '''
-cargo build --release -p 'rpc_*' -p 'masstree_analytics' -p 'hotel_reservation'
+cargo build --release -p 'rpc_*' -p 'masstree_analytics' -p 'hotel_reservation' -p 'hotel_microservices'
 '''
 
 [tasks]
