@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-mrpc-build = { path = "../../mrpc/mrpc-build" }
+mrpc-build = { path = "../../mrpc-build" }
 
 [dependencies]
-mrpc = { path = "../../mrpc" }
+mrpc = { path = "../.." }
 prost = { path = "../../3rdparty/prost", features = ["mrpc-frontend"] }
 
 structopt = "0.3.23"
