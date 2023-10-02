@@ -40,9 +40,15 @@ const fn default_start_delay() -> u64 {
     1
 }
 
+const fn default_ssh_port() -> usize {
+    22
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct WorkerSpec {
     host: String,
+    #[serde(default = "default_ssh_port")]
+    port: usize,
     bin: String,
     args: String,
     #[serde(default)]
@@ -247,6 +253,7 @@ fn start_ssh(
 ) -> impl FnOnce() {
     let benchmark_name = benchmark.name.clone();
     let host = worker.host.clone();
+    let worker_port = worker.port.clone().to_string();
     let output_dir = opt.output_dir.as_ref().map(|d| d.join(&benchmark_name));
     let debug_mode = opt.debug;
     let env_str = envs
@@ -268,7 +275,7 @@ fn start_ssh(
         // using stupid timers to enforce launch order.
         thread::sleep(delay);
 
-        let (ip, port) = (&host, "22");
+        let (ip, port) = (&host, &worker_port);
 
         let mut cmd = Command::new("ssh");
 
