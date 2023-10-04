@@ -1,4 +1,4 @@
-workdir = "~/nfs/phoenix"
+workdir = "~/phoenix"
 
 [env]
 RUST_BACKTRACE = "1"

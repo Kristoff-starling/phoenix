@@ -1,0 +1,37 @@
+version: "3"
+services:
+  hotel_frontend:
+    image: hotel_service:latest
+    container_name: 'hotel_frontend'
+    ports:
+    - '2345:22'
+    - '5000:5000'
+    command: '/usr/sbin/sshd -D'
+  hotel_search:
+    image: hotel_service:latest
+    container_name: 'hotel_search'
+    ports:
+    - '2346:22'
+    - '8086:8086'
+    command: '/usr/sbin/sshd -D'
+  hotel_profile:
+    image: hotel_service:latest
+    container_name: 'hotel_profile'
+    ports:
+    - '2347:22'
+    - '8085:8085'
+    command: '/usr/sbin/sshd -D'
+  hotel_rate:
+    image: hotel_service:latest
+    container_name: 'hotel_rate'
+    ports:
+    - '2348:22'
+    - '8084:8084'
+    command: '/usr/sbin/sshd -D'
+  hotel_geo:
+    image: hotel_service:latest
+    container_name: 'hotel_geo'
+    ports:
+    - '2349:22'
+    - '8083:8083'
+    command: '/usr/sbin/sshd -D'

@@ -1,17 +1,17 @@
 {
     "FrontendPort": 5000,
-    "GeoAddress": "rdma0.danyang-06",
+    "GeoAddress": "root@localhost",
     "GeoPort": 8083,
     "GeoMongoAddress": "mongodb://localhost:27000",
-    "RateAddress": "rdma0.danyang-06",
+    "RateAddress": "root@localhost",
     "RatePort": 8084,
     "RateMongoAddress": "mongodb://localhost:27001",
     "RateMemcAddress": "memcache://localhost:17001",
-    "ProfileAddress": "rdma0.danyang-05",
+    "ProfileAddress": "root@localhost",
     "ProfilePort": 8085,
     "ProfileMongoAddress": "mongodb://localhost:27002",
     "ProfileMemcAddress": "memcache://localhost:17002",
-    "SearchAddress": "rdma0.danyang-04",
+    "SearchAddress": "root@localhost",
     "SearchPort": 8086,
     "LogPath": "/tmp/mrpc-eval/microservices"
 }

@@ -5,32 +5,37 @@ timeout_secs = 600
 start_delay = 5
 
 [[worker]]
-host = "danyang-06"
+host = "root@localhost"
+port = 2349
 bin = "hotel_reserv_geo"
 args = "--config eval/hotel-services/config.json"
 term = 2
 
 [[worker]]
-host = "danyang-06"
+host = "root@localhost"
+port = 2348
 bin = "hotel_reserv_rate"
 args = "--config eval/hotel-services/config.json"
 term = 2
 
 [[worker]]
-host = "danyang-05"
+host = "root@localhost"
+port = 2347
 bin = "hotel_reserv_profile"
 args = "--config eval/hotel-services/config.json"
 term = 2
 
 [[worker]]
-host = "danyang-04"
+host = "root@localhost"
+port = 2346
 bin = "hotel_reserv_search"
 args = "--config eval/hotel-services/config.json"
 term = 2
 dependencies = [0, 1]
 
 [[worker]]
-host = "danyang-03"
+host = "root@localhost"
+port = 2345
 bin = "hotel_reserv_frontend"
 args = "--config eval/hotel-services/config.json"
 term = 2

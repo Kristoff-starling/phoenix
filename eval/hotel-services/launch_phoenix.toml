@@ -4,22 +4,32 @@ group = "launch_phoenix"
 timeout_secs = 600
 
 [[worker]]
-host = "danyang-06"
-bin = "phoenix"
+host = "root@localhost"
+port = 2345
+bin = "phoenixos"
 args = "-c eval/hotel-services/phoenix.toml"
 
 [[worker]]
-host = "danyang-05"
-bin = "phoenix"
+host = "root@localhost"
+port = 2346
+bin = "phoenixos"
 args = "-c eval/hotel-services/phoenix.toml"
 
 [[worker]]
-host = "danyang-04"
-bin = "phoenix"
+host = "root@localhost"
+port = 2347
+bin = "phoenixos"
 args = "-c eval/hotel-services/phoenix.toml"
 
 [[worker]]
-host = "danyang-03"
-bin = "phoenix"
+host = "root@localhost"
+port = 2348
+bin = "phoenixos"
+args = "-c eval/hotel-services/phoenix.toml"
+
+[[worker]]
+host = "root@localhost"
+port = 2349
+bin = "phoenixos"
 args = "-c eval/hotel-services/phoenix.toml"
 
