@@ -3,35 +3,77 @@ services:
   hotel_frontend:
     image: hotel_service:latest
     container_name: 'hotel_frontend'
+    hostname: host_frontend
     ports:
     - '2345:22'
-    - '5000:5000'
     command: '/usr/sbin/sshd -D'
   hotel_search:
     image: hotel_service:latest
     container_name: 'hotel_search'
+    hostname: host_search
     ports:
     - '2346:22'
-    - '8086:8086'
     command: '/usr/sbin/sshd -D'
   hotel_profile:
     image: hotel_service:latest
     container_name: 'hotel_profile'
+    hostname: host_profile
     ports:
     - '2347:22'
-    - '8085:8085'
     command: '/usr/sbin/sshd -D'
   hotel_rate:
     image: hotel_service:latest
     container_name: 'hotel_rate'
+    hostname: host_rate
     ports:
     - '2348:22'
-    - '8084:8084'
     command: '/usr/sbin/sshd -D'
   hotel_geo:
     image: hotel_service:latest
     container_name: 'hotel_geo'
+    hostname: host_geo
     ports:
     - '2349:22'
-    - '8083:8083'
     command: '/usr/sbin/sshd -D'
+  mongodb-profile:
+    image: mongo:4.4.6
+    container_name: 'hotel_reserv_profile_mongo'
+    command: --port 27002
+    hostname: profile-db
+    restart: always
+  memcached-profile:
+    image: memcached
+    container_name: 'hotel_reserv_profile_mmc'
+    hostname: profile-mem
+    command: --port 17002
+    restart: always
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_THREADS=2
+    logging:
+      options:
+        max-size: 50m
+  mongodb-rate:
+    image: mongo:4.4.6
+    container_name: 'hotel_reserv_rate_mongo'
+    command: --port 27001
+    hostname: rate-db
+    restart: always
+  memcached-rate:
+    image: memcached
+    container_name: 'hotel_reserv_rate_mmc'
+    hostname: rate-mem
+    command: --port 17001
+    restart: always
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_THREADS=2
+    logging:
+      options:
+        max-size: 50m
+  mongodb-geo:
+    image: mongo:4.4.6
+    container_name: 'hotel_reserv_geo_mongo'
+    command: --port 27000
+    hostname: geo-db
+    restart: always
