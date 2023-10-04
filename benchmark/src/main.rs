@@ -322,7 +322,7 @@ fn start_ssh(
         if !debug_mode {
             cmd.arg(format!(
                 // "export PATH={} && cd {} && {} numactl -N 0 -m 0 cargo run --release --bin {} -- {}",
-                "export PATH={} && cd {} && {} target/release/{} {}",
+                "export PATH={} && cd {} && {} target/phoenix/release/{} {}",
                 env_path,
                 cargo_dir.display(),
                 env_str,
