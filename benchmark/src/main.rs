@@ -21,6 +21,7 @@ pub mod tee;
 #[derive(Debug, Clone, Deserialize)]
 struct Config {
     workdir: path::PathBuf,
+    extra_path: String,
     env: toml::Value,
 }
 
@@ -267,6 +268,7 @@ fn start_ssh(
         Duration::from_secs(opt.global_timeout_secs)
     };
     let cargo_dir = config.workdir.clone();
+    let extra_path_str = config.extra_path.clone();
     let dry_run = opt.dry_run;
     let silent = opt.silent;
     let logical_and = opt.logical_and;
@@ -318,12 +320,11 @@ fn start_ssh(
             .arg(ip);
 
         // TODO(cjr): also to distribute binary program to workers
-        let env_path = env::var("PATH").expect("failed to get PATH");
         if !debug_mode {
             cmd.arg(format!(
                 // "export PATH={} && cd {} && {} numactl -N 0 -m 0 cargo run --release --bin {} -- {}",
-                "export PATH={} && cd {} && {} target/phoenix/release/{} {}",
-                env_path,
+                "export PATH={}:$PATH && cd {} && {} target/phoenix/release/{} {}",
+                extra_path_str,
                 cargo_dir.display(),
                 env_str,
                 worker.bin,
@@ -331,8 +332,8 @@ fn start_ssh(
             ));
         } else {
             cmd.arg(format!(
-                "export PATH={} && cd {} && {} numactl -N 0 -m 0 target/debug/{} {}",
-                env_path,
+                "export PATH={}:$PATH && cd {} && {} numactl -N 0 -m 0 target/debug/{} {}",
+                extra_path_str,
                 cargo_dir.display(),
                 env_str,
                 worker.bin,
@@ -488,7 +489,7 @@ fn run_benchmark(opt: &Opt, path: path::PathBuf) -> anyhow::Result<()> {
         panic!("unexpected config envs: {:?}", config.env);
     };
 
-    // bulid benchmark cases
+    // build benchmark cases
     let mut binaries: Vec<String> = spec.worker.iter().map(|s| s.bin.clone()).collect();
     binaries.dedup();
     let cargo_dir = &config.workdir;

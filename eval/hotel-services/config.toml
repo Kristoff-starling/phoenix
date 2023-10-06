@@ -1,4 +1,5 @@
 workdir = "~/phoenix"
+extra_path = "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [env]
 RUST_BACKTRACE = "1"

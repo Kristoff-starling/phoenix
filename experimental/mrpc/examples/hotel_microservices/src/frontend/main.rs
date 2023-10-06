@@ -60,8 +60,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     logging::init_env_log("RUST_LOG", "info");
 
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
+    log::info!("Connecting to search server...");
     let search_client =
         SearchClient::connect(format!("{}:{}", args.search_addr, args.search_port))?;
+    log::info!("Connecting to profile server...");
     let profile_client =
         ProfileClient::connect(format!("{}:{}", args.profile_addr, args.profile_port))?;
     let frontend = Arc::new(FrontendService::new(
