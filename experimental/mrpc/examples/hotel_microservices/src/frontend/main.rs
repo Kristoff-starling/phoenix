@@ -86,5 +86,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = graceful.await {
         log::error!("Server error: {}", e);
     }
+    log::info!("Frontend initialization complete, listening...")
     Ok(())
 }

@@ -66,5 +66,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(ProfileServer::new(service))
         .serve_with_graceful_shutdown(signal)
         .await?;
+    log::info!("Profile initialization complete, listening...")
     Ok(())
 }
