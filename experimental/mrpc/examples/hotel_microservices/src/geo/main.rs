@@ -56,6 +56,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(GeoServer::new(service))
         .serve_with_graceful_shutdown(signal)
         .await?;
-    log::info!("Geo initialization complete, listening...")
+    log::info!("Geo initialization complete, listening...");
     Ok(())
 }

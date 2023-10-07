@@ -66,6 +66,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(RateServer::new(service))
         .serve_with_graceful_shutdown(signal)
         .await?;
-    log::info!("Rate initialization complete, listening...")
+    log::info!("Rate initialization complete, listening...");
     Ok(())
 }
