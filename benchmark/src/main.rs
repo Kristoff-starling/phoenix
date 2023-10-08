@@ -323,18 +323,18 @@ fn start_ssh(
         if !debug_mode {
             cmd.arg(format!(
                 // "export PATH={} && cd {} && {} numactl -N 0 -m 0 cargo run --release --bin {} -- {}",
-                "export PATH={}:$PATH && cd {} && {} target/phoenix/release/{} {}",
-                extra_path_str,
+                "cd {} && export PATH={} && {} target/phoenix/release/{} {}",
                 cargo_dir.display(),
+                extra_path_str,
                 env_str,
                 worker.bin,
                 worker.args
             ));
         } else {
             cmd.arg(format!(
-                "export PATH={}:$PATH && cd {} && {} numactl -N 0 -m 0 target/debug/{} {}",
-                extra_path_str,
+                "cd {} && export PATH={} && {} numactl -N 0 -m 0 target/debug/{} {}",
                 cargo_dir.display(),
+                extra_path_str,
                 env_str,
                 worker.bin,
                 worker.args

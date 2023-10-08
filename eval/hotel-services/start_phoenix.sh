@@ -6,4 +6,4 @@ fi
 
 WORKDIR=`dirname $(realpath $0)`
 cd $WORKDIR
-cargo rr --bin launcher -- -o ${OD} --benchmark ./launch_phoenix.toml --configfile ./config.toml --timeout 600
+cargo rr --bin launcher -- -o ${OD} --benchmark ./launch_phoenix.toml --configfile ./config.toml --timeout 6000
