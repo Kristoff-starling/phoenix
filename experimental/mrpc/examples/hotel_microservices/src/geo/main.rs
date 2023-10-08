@@ -52,10 +52,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = GeoService::new(database, args.log_path).await?;
     let signal = async_ctrlc::CtrlC::new()?;
+    log::info!("Geo initialization complete, listening...");
     mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port))?
         .add_service(GeoServer::new(service))
         .serve_with_graceful_shutdown(signal)
         .await?;
-    log::info!("Geo initialization complete, listening...");
     Ok(())
 }

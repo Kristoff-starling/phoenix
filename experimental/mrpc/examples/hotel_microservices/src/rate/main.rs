@@ -62,10 +62,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = RateService::new(database, memc_client, args.log_path);
     let signal = async_ctrlc::CtrlC::new()?;
+    log::info!("Rate initialization complete, listening...");
     mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port))?
         .add_service(RateServer::new(service))
         .serve_with_graceful_shutdown(signal)
         .await?;
-    log::info!("Rate initialization complete, listening...");
     Ok(())
 }

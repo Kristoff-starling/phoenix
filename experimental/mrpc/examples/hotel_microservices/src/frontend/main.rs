@@ -83,9 +83,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let signal = async_ctrlc::CtrlC::new()?;
     let graceful = server.with_graceful_shutdown(signal);
+    log::info!("Frontend initialization complete, listening...");
     if let Err(e) = graceful.await {
         log::error!("Server error: {}", e);
     }
-    log::info!("Frontend initialization complete, listening...");
     Ok(())
 }
