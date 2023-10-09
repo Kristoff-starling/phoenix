@@ -1,9 +1,8 @@
 use std::cell::RefCell;
 use std::path::PathBuf;
-use std::task::Poll;
+use tokio::sync::{mpsc, oneshot};
 
 use anyhow::Result;
-use futures::poll;
 use minstant::Instant;
 
 use mrpc::alloc::Vec;
@@ -25,16 +24,32 @@ pub mod hotel_microservices {
         mrpc::include_proto!("search");
     }
 }
-use hotel_microservices::geo::geo_client::GeoClient;
-use hotel_microservices::geo::Request as GeoRequest;
-use hotel_microservices::rate::rate_client::RateClient;
-use hotel_microservices::rate::Request as RateRequest;
+use hotel_microservices::geo::{Request as GeoRequest, Result as GeoResult};
+use hotel_microservices::rate::{Request as RateRequest, Result as RateResult};
 use hotel_microservices::search::search_server::Search;
 use hotel_microservices::search::{NearbyRequest as SearchRequest, SearchResult};
 
+#[derive(Debug)]
+pub enum SearchGeoCommand {
+    Req {
+        geo_req: GeoRequest,
+        geo_resp: oneshot::Sender<RRef<GeoResult>>,
+    },
+}
+
+#[derive(Debug)]
+pub enum SearchRateCommand {
+    Req {
+        rate_req: RateRequest,
+        rate_resp: oneshot::Sender<RRef<RateResult>>,
+    },
+}
+
 pub struct SearchService {
-    geo_client: GeoClient,
-    rate_client: RateClient,
+    // geo_client: GeoClient,
+    // rate_client: RateClient,
+    geo_tx: mpsc::Sender<SearchGeoCommand>,
+    rate_tx: mpsc::Sender<SearchRateCommand>,
     log_path: Option<PathBuf>,
     tracer: RefCell<Tracer>,
 }
@@ -89,14 +104,16 @@ impl SearchService {
         };
 
         let start = Instant::now();
-        let mut resp_fut = self.geo_client.nearby(geo_req);
-        let nearby = loop {
-            let result = poll!(&mut resp_fut);
-            match result {
-                Poll::Ready(resp) => break resp,
-                Poll::Pending => {}
-            }
-        }?;
+        let (geo_resp_tx, geo_resp_rx) = oneshot::channel();
+        let geo_cmd = SearchGeoCommand::Req{
+            geo_req: geo_req,
+            geo_resp: geo_resp_tx
+        };
+        if self.geo_tx.send(geo_cmd).await.is_err() {
+            log::error!("Search-Geo channel failed");
+        }
+        let nearby = geo_resp_rx.await?;
+
         self.tracer
             .borrow_mut()
             .record_end_to_end("geo", start.elapsed())?;
@@ -109,14 +126,15 @@ impl SearchService {
         };
 
         let start = Instant::now();
-        let mut resp_fut = self.rate_client.get_rates(rate_req);
-        let rates = loop {
-            let result = poll!(&mut resp_fut);
-            match result {
-                Poll::Ready(resp) => break resp,
-                Poll::Pending => {}
-            }
-        }?;
+        let (rate_resp_tx, rate_resp_rx) = oneshot::channel();
+        let rate_cmd = SearchRateCommand::Req{
+            rate_req: rate_req,
+            rate_resp: rate_resp_tx
+        };
+        if self.rate_tx.send(rate_cmd).await.is_err() {
+            log::error!("Search-Rate channel failed");
+        }
+        let rates = rate_resp_rx.await?;
         self.tracer
             .borrow_mut()
             .record_end_to_end("rate", start.elapsed())?;
@@ -132,13 +150,13 @@ impl SearchService {
 }
 
 impl SearchService {
-    pub fn new(geo: GeoClient, rate: RateClient, log_path: Option<PathBuf>) -> Self {
+    pub fn new(geo: mpsc::Sender<SearchGeoCommand>, rate: mpsc::Sender<SearchRateCommand>, log_path: Option<PathBuf>) -> Self {
         let mut tracer = Tracer::new();
         tracer.new_end_to_end_entry("geo");
         tracer.new_end_to_end_entry("rate");
         SearchService {
-            geo_client: geo,
-            rate_client: rate,
+            geo_tx: geo,
+            rate_tx: rate,
             log_path,
             tracer: RefCell::new(tracer),
         }

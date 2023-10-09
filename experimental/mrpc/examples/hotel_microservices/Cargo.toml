@@ -25,7 +25,7 @@ chrono = "0.4.22"
 env_logger = "0.9.0"
 log = "0.4.17"
 memcache = "0.16.0"
-tokio = { version = "1.21.0", default_features=false, features = ["rt"] }
+tokio = { version = "1.21.0", features = ["full"] }
 hyper = { version = "0.14", features = ["server", "http1", "http2", "tcp"] }
 url = "2.3.1"
 async-ctrlc = "1.2.0"
