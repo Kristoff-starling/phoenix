@@ -39,13 +39,14 @@ RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cargo install cargo-make
 
-RUN cd /root && git clone https://github.com/kristoff-starling/phoenix.git -b hotel --recursive
+RUN cd /root && git clone https://github.com/kristoff-starling/phoenix.git -b multi --recursive
 
 WORKDIR /root/phoenix
 
 RUN cargo make build-phoenixos
 RUN cargo make build-plugins
 RUN cargo make deploy-plugins
+RUN cargo make build-phoenix-cli
 RUN cargo make --cwd experimental/mrpc build-mrpc-plugins
 RUN cargo make --cwd experimental/mrpc deploy-mrpc-plugins
 RUN cd experimental/mrpc/examples/hotel_microservices && cargo build --release

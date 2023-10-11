@@ -1,10 +1,8 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::task::Poll;
 use tokio::sync::mpsc;
 
-use futures::poll;
 use structopt::StructOpt;
 
 #[path = "../config.rs"]
@@ -57,22 +55,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     eprintln!("args: {:?}", args);
     logging::init_env_log("RUST_LOG", "info");
-    log::info!("Connecting to geo server...");
-    let geo_client = GeoClient::connect(format!("{}:{}", args.geo_addr, args.geo_port))?;
 
     let (geo_tx, mut geo_rx) = mpsc::channel(32);
     let geo_proxy = tokio::spawn(async move {
+        log::info!("Connecting to geo server...");
+        let geo_client = GeoClient::connect(format!("{}:{}", args.geo_addr, args.geo_port))?;
         while let Some(cmd) = geo_rx.recv().await {
             match cmd {
                 SearchGeoCommand::Req { geo_req, geo_resp } => {
-                    let mut resp_fut = geo_client.nearby(geo_req);
-                    let nearby = loop {
-                        let result = poll!(&mut resp_fut);
-                        match result {
-                            Poll::Ready(resp) => break resp,
-                            Poll::Pending => {}
-                        }
-                    }.map_err(|err| mrpc::Status::internal(err.to_string()))?;
+                    let nearby = geo_client.nearby(geo_req).await?;
                     let _ = geo_resp.send(nearby);
                 }
             }
@@ -81,20 +72,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let (rate_tx, mut rate_rx) = mpsc::channel(32);
-    log::info!("Connecting to rate server...");
-    let rate_client = RateClient::connect(format!("{}:{}", args.rate_addr, args.rate_port))?;
     let rate_proxy = tokio::spawn(async move {
+        log::info!("Connecting to rate server...");
+        let rate_client = RateClient::connect(format!("{}:{}", args.rate_addr, args.rate_port))?;
         while let Some(cmd) = rate_rx.recv().await {
             match cmd {
                 SearchRateCommand::Req { rate_req, rate_resp } => {
-                    let mut resp_fut = rate_client.get_rates(rate_req);
-                    let rates = loop {
-                        let result = poll!(&mut resp_fut);
-                        match result {
-                            Poll::Ready(resp) => break resp,
-                            Poll::Pending => {}
-                        }
-                    }.map_err(|err| mrpc::Status::internal(err.to_string()))?;
+                    let rates = rate_client.get_rates(rate_req).await?;
                     let _ = rate_resp.send(rates);
                 }
             }
