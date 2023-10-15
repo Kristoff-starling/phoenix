@@ -1,0 +1,28 @@
+version: "3"
+services:
+  hotel_rate:
+    image: kristoffstarling/hotel_service:single
+    container_name: 'hotel_rate'
+    hostname: host_rate
+    ports:
+    - '2348:22'
+    - '8084:8084'
+    command: '/usr/sbin/sshd -D'
+  mongodb-rate:
+    image: mongo:latest
+    container_name: 'hotel_rate_mongo'
+    command: --port 27001
+    hostname: rate-db
+    restart: always
+  memcached-rate:
+    image: memcached
+    container_name: 'hotel_rate_mmc'
+    hostname: rate-mem
+    command: --port 17001
+    restart: always
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_THREADS=2
+    logging:
+      options:
+        max-size: 50m

@@ -1,0 +1,42 @@
+name = "hotel_microservices"
+description = "Run hotel_microservices"
+group = "hotel_microservices"
+timeout_secs = 6000
+start_delay = 60
+
+[[worker]]
+host = "root@h2"
+port = 2345
+bin = "hotel_reserv_frontend"
+args = "--config eval/hotel-services/config.json"
+term = 2
+dependencies = [1, 2, 3, 4]
+
+[[worker]]
+host = "root@h3"
+port = 2346
+bin = "hotel_reserv_geo"
+args = "--config eval/hotel-services/config.json"
+term = 2
+
+[[worker]]
+host = "root@h4"
+port = 2347
+bin = "hotel_reserv_profile"
+args = "--config eval/hotel-services/config.json"
+term = 2
+
+[[worker]]
+host = "root@h5"
+port = 2348
+bin = "hotel_reserv_rate"
+args = "--config eval/hotel-services/config.json"
+term = 2
+
+[[worker]]
+host = "root@h6"
+port = 2349
+bin = "hotel_reserv_search"
+args = "--config eval/hotel-services/config.json"
+term = 2
+dependencies = [1, 3]

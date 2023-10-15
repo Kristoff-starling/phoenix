@@ -1,0 +1,10 @@
+version: "3"
+services:
+  hotel_search:
+    image: kristoffstarling/hotel_service:single
+    container_name: 'hotel_search'
+    hostname: host_search
+    ports:
+    - '2349:22'
+    - '8086:8086'
+    command: '/usr/sbin/sshd -D'
