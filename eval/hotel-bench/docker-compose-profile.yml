@@ -1,0 +1,28 @@
+version: "3"
+services:
+  hotel_profile:
+    image: kristoffstarling/hotel_service:multi
+    container_name: 'hotel_profile'
+    hostname: host_profile
+    ports:
+    - '2347:22'
+    - '8085:8085'
+    command: '/usr/sbin/sshd -D'
+  mongodb-profile:
+    image: mongo:latest
+    container_name: 'hotel_profile_mongo'
+    command: --port 27002
+    hostname: profile-db
+    restart: always
+  memcached-profile:
+    image: memcached
+    container_name: 'hotel_profile_mmc'
+    hostname: profile-mem
+    command: --port 17002
+    restart: always
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_THREADS=2
+    logging:
+      options:
+        max-size: 50m
