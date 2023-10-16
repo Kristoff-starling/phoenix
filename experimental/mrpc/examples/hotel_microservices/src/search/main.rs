@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 use tokio::sync::mpsc;
+use std::thread;
 
 use structopt::StructOpt;
 
@@ -57,43 +58,74 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     logging::init_env_log("RUST_LOG", "info");
 
     let (geo_tx, mut geo_rx) = mpsc::channel(32);
-    let geo_proxy = tokio::spawn(async move {
-        log::info!("Connecting to geo server...");
-        let geo_client = GeoClient::connect(format!("{}:{}", args.geo_addr, args.geo_port))?;
-        while let Some(cmd) = geo_rx.recv().await {
-            match cmd {
-                SearchGeoCommand::Req { geo_req, geo_resp } => {
-                    let nearby = geo_client.nearby(geo_req).await?;
-                    let _ = geo_resp.send(nearby);
+    let geo_thread_builder = thread::Builder::new().name("geo-proxy".to_string());
+    let geo_proxy = geo_thread_builder.spawn(move || {
+        let _ = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build().unwrap()
+            .block_on(async {
+                log::info!("Connecting to geo server...");
+                let geo_client = GeoClient::connect(format!("{}:{}", args.geo_addr, args.geo_port))?;
+                while let Some(cmd) = geo_rx.recv().await {
+                    match cmd {
+                        SearchGeoCommand::Req { geo_req, geo_resp } => {
+                            log::info!("geo-proxy receive request");
+                            let nearby = geo_client.nearby(geo_req).await?;
+                            log::info!("geo-proxy receive response");
+                            let _ = geo_resp.send(nearby);
+                        }
+                    }
                 }
-            }
-        }
-        Ok::<(), mrpc::Status>(())
-    });
+                Ok::<(), mrpc::Status>(())
+            });
+    }).unwrap();
 
     let (rate_tx, mut rate_rx) = mpsc::channel(32);
-    let rate_proxy = tokio::spawn(async move {
-        log::info!("Connecting to rate server...");
-        let rate_client = RateClient::connect(format!("{}:{}", args.rate_addr, args.rate_port))?;
-        while let Some(cmd) = rate_rx.recv().await {
-            match cmd {
-                SearchRateCommand::Req { rate_req, rate_resp } => {
-                    let rates = rate_client.get_rates(rate_req).await?;
-                    let _ = rate_resp.send(rates);
+    let rate_thread_builder = thread::Builder::new().name("rate-proxy".to_string());
+    let rate_proxy = rate_thread_builder.spawn(move || {
+        let _ = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build().unwrap()
+            .block_on(async {
+                log::info!("Connecting to rate server...");
+                let rate_client = RateClient::connect(format!("{}:{}", args.rate_addr, args.rate_port))?;
+                while let Some(cmd) = rate_rx.recv().await {
+                    match cmd {
+                        SearchRateCommand::Req { rate_req, rate_resp } => {
+                            log::info!("rate-proxy receive request");
+                            let rates = rate_client.get_rates(rate_req).await?;
+                            log::info!("rate-proxy receive response");
+                            let _ = rate_resp.send(rates);
+                        }
+                    }
                 }
-            }
-        }
-        Ok::<(), mrpc::Status>(())
-    });
+                Ok::<(), mrpc::Status>(())
+            });
+    }).unwrap();
 
-    let service = SearchService::new(geo_tx, rate_tx, args.log_path);
-    let signal = async_ctrlc::CtrlC::new()?;
+    let frontend_thread_builder = thread::Builder::new().name("frontend-receiver".to_string());
+    let frontend_receiver = frontend_thread_builder.spawn(move || {
+        let _ = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build().unwrap()
+            .block_on(async {
+                let service = SearchService::new(geo_tx, rate_tx, args.log_path);
+                let signal = async_ctrlc::CtrlC::new()
+                    .map_err(|err| mrpc::Status::internal(err.to_string()))?;
+                mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port))?
+                    .add_service(SearchServer::new(service))
+                    .serve_with_graceful_shutdown(signal)
+                    .await?;
+                Ok::<(), mrpc::Status>(())
+            });
+    }).unwrap(); 
+    
+    let _ = geo_proxy.join().unwrap();
+    let _ = rate_proxy.join().unwrap();
+    let _ = frontend_receiver.join().unwrap();
     log::info!("Search initialization complete, listening...");
-    let _ = geo_proxy.await;
-    let _ = rate_proxy.await;
-    mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port))?
-        .add_service(SearchServer::new(service))
-        .serve_with_graceful_shutdown(signal)
-        .await?;
     Ok(())
 }

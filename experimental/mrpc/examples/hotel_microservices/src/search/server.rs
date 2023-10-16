@@ -98,6 +98,7 @@ impl SearchService {
 
         log::trace!("nearby lat = {:.4}", request.lat);
         log::trace!("nearby lon = {:.4}", request.lon);
+        log::info!("Receive request: lat = {:.4}, lon = {:.4}", request.lat, request.lon);
         let geo_req = GeoRequest {
             lat: request.lat,
             lon: request.lon,
@@ -109,10 +110,12 @@ impl SearchService {
             geo_req: geo_req,
             geo_resp: geo_resp_tx
         };
+        log::info!("search-geo request send");
         if self.geo_tx.send(geo_cmd).await.is_err() {
             log::error!("Search-Geo channel failed");
         }
         let nearby = geo_resp_rx.await?;
+        log::info!("search-geo response received");
 
         self.tracer
             .borrow_mut()
@@ -131,10 +134,12 @@ impl SearchService {
             rate_req: rate_req,
             rate_resp: rate_resp_tx
         };
+        log::info!("search-rate request send");
         if self.rate_tx.send(rate_cmd).await.is_err() {
             log::error!("Search-Rate channel failed");
         }
         let rates = rate_resp_rx.await?;
+        log::info!("search-rate response received");
         self.tracer
             .borrow_mut()
             .record_end_to_end("rate", start.elapsed())?;
