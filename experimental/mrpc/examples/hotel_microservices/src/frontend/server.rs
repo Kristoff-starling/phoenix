@@ -2,10 +2,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::task::Poll;
+use tokio::sync::{mpsc, oneshot};
 
 use anyhow::{anyhow, Result};
-use futures::poll;
 use hyper::{Body, Request, Response, StatusCode};
 use minstant::Instant;
 use serde_json::json;
@@ -25,14 +24,28 @@ pub mod hotel_microservices {
     }
 }
 
-use hotel_microservices::profile::profile_client::ProfileClient;
 use hotel_microservices::profile::{Request as ProfileRequest, Result as ProfileResult};
-use hotel_microservices::search::search_client::SearchClient;
-use hotel_microservices::search::NearbyRequest as SearchRequest;
+use hotel_microservices::search::{NearbyRequest as SearchRequest, SearchResult};
+
+#[derive(Debug)]
+pub enum FrontendSearchCommand {
+    Req {
+        search_req: SearchRequest,
+        search_resp: oneshot::Sender<RRef<SearchResult>>,
+    },
+}
+
+#[derive(Debug)]
+pub enum FrontendProfileCommand {
+    Req {
+        profile_req: ProfileRequest,
+        profile_resp: oneshot::Sender<RRef<ProfileResult>>,
+    },
+}
 
 pub struct FrontendService {
-    search_client: SearchClient,
-    profile_client: ProfileClient,
+    search_tx: mpsc::Sender<FrontendSearchCommand>,
+    profile_tx: mpsc::Sender<FrontendProfileCommand>,
     log_path: Option<PathBuf>,
     tracer: RefCell<Tracer>,
 }
@@ -42,13 +55,13 @@ unsafe impl Send for FrontendService {}
 unsafe impl Sync for FrontendService {}
 
 impl FrontendService {
-    pub fn new(search: SearchClient, profile: ProfileClient, log_path: Option<PathBuf>) -> Self {
+    pub fn new(search: mpsc::Sender<FrontendSearchCommand>, profile: mpsc::Sender<FrontendProfileCommand>, log_path: Option<PathBuf>) -> Self {
         let mut tracer = Tracer::new();
         tracer.new_end_to_end_entry("search");
         tracer.new_end_to_end_entry("profile");
         FrontendService {
-            search_client: search,
-            profile_client: profile,
+            search_tx: search,
+            profile_tx: profile,
             log_path,
             tracer: RefCell::new(tracer),
         }
@@ -104,16 +117,27 @@ impl FrontendService {
             out_date: out_date.as_ref().into(),
         };
         log::trace!("SEARCH {:?}", search_req);
-
+        let (search_resp_tx, search_resp_rx) = oneshot::channel();
+        let search_cmd = FrontendSearchCommand::Req {
+            search_req: search_req,
+            search_resp: search_resp_tx
+        };
         let start = Instant::now();
-        let mut resp_fut = self.search_client.nearby(search_req);
-        let result = loop {
-            let result = poll!(&mut resp_fut);
-            match result {
-                Poll::Ready(resp) => break resp,
-                Poll::Pending => {}
-            }
-        }?;
+        if self.search_tx.send(search_cmd).await.is_err() {
+            log::error!("Frontend-Search channel failed");
+        }
+        log::info!("frontend-search request sent");
+        let result = search_resp_rx.await?;
+        log::info!("frontend-search response received");
+        // let result = self.search_client.nearby(search_req).await?;
+        // let mut resp_fut = self.search_client.nearby(search_req);
+        // let result = loop {
+        //     let result = poll!(&mut resp_fut);
+        //     match result {
+        //         Poll::Ready(resp) => break resp,
+        //         Poll::Pending => {}
+        //     }
+        // }?;
         self.tracer
             .borrow_mut()
             .record_end_to_end("search", start.elapsed())?;
@@ -125,14 +149,26 @@ impl FrontendService {
         };
 
         let start = Instant::now();
-        let mut resp_fut = self.profile_client.get_profiles(profile_req);
-        let result = loop {
-            let result = poll!(&mut resp_fut);
-            match result {
-                Poll::Ready(resp) => break resp,
-                Poll::Pending => {}
-            }
-        }?;
+        let (profile_resp_tx, profile_resp_rx) = oneshot::channel();
+        let profile_cmd = FrontendProfileCommand::Req {
+            profile_req: profile_req,
+            profile_resp: profile_resp_tx
+        };
+        if self.profile_tx.send(profile_cmd).await.is_err() {
+            log::error!("Frontend-Profile channel failed");
+        }
+        log::info!("frontend-profile request sent");
+        let result = profile_resp_rx.await?;
+        log::info!("frontend-profile response received");
+        // let result = self.profile_client.get_profiles(profile_req).await?;
+        // let mut resp_fut = self.profile_client.get_profiles(profile_req);
+        // let result = loop {
+        //     let result = poll!(&mut resp_fut);
+        //     match result {
+        //         Poll::Ready(resp) => break resp,
+        //         Poll::Pending => {}
+        //     }
+        // }?;
         self.tracer
             .borrow_mut()
             .record_end_to_end("profile", start.elapsed())?;
