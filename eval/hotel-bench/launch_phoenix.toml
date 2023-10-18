@@ -7,29 +7,29 @@ timeout_secs = 6000
 host = "root@h2"
 port = 2345
 bin = "phoenixos"
-args = "-c eval/hotel-services/phoenix.toml"
+args = "-c eval/hotel-bench/phoenix.toml"
 
 [[worker]]
 host = "root@h3"
 port = 2346
 bin = "phoenixos"
-args = "-c eval/hotel-services/phoenix.toml"
+args = "-c eval/hotel-bench/phoenix.toml"
 
 [[worker]]
 host = "root@h4"
 port = 2347
 bin = "phoenixos"
-args = "-c eval/hotel-services/phoenix.toml"
+args = "-c eval/hotel-bench/phoenix.toml"
 
 [[worker]]
 host = "root@h5"
 port = 2348
 bin = "phoenixos"
-args = "-c eval/hotel-services/phoenix.toml"
+args = "-c eval/hotel-bench/phoenix.toml"
 
 [[worker]]
 host = "root@h6"
 port = 2349
 bin = "phoenixos"
-args = "-c eval/hotel-services/phoenix.toml"
+args = "-c eval/hotel-bench/phoenix.toml"
 
