@@ -83,11 +83,13 @@ impl Search for SearchService {
         &self,
         request: RRef<SearchRequest>,
     ) -> Result<WRef<SearchResult>, mrpc::Status> {
+        log::debug!("nearby receive request");
         let result = self
             .nearby_internal(request)
             .await
             .map_err(|err| mrpc::Status::internal(err.to_string()))?;
         let wref = WRef::new(result);
+        log::debug!("nearby response sent");
         Ok(wref)
     }
 }
@@ -98,7 +100,7 @@ impl SearchService {
 
         log::trace!("nearby lat = {:.4}", request.lat);
         log::trace!("nearby lon = {:.4}", request.lon);
-        log::info!("Receive request: lat = {:.4}, lon = {:.4}", request.lat, request.lon);
+        log::debug!("Receive request: lat = {:.4}, lon = {:.4}", request.lat, request.lon);
         let geo_req = GeoRequest {
             lat: request.lat,
             lon: request.lon,
@@ -110,12 +112,12 @@ impl SearchService {
             geo_req: geo_req,
             geo_resp: geo_resp_tx
         };
-        log::info!("search-geo request send");
+        log::debug!("search-geo request send");
         if self.geo_tx.send(geo_cmd).await.is_err() {
             log::error!("Search-Geo channel failed");
         }
         let nearby = geo_resp_rx.await?;
-        log::info!("search-geo response received");
+        log::debug!("search-geo response received");
 
         self.tracer
             .borrow_mut()
@@ -134,12 +136,12 @@ impl SearchService {
             rate_req: rate_req,
             rate_resp: rate_resp_tx
         };
-        log::info!("search-rate request send");
+        log::debug!("search-rate request send");
         if self.rate_tx.send(rate_cmd).await.is_err() {
             log::error!("Search-Rate channel failed");
         }
         let rates = rate_resp_rx.await?;
-        log::info!("search-rate response received");
+        log::debug!("search-rate response received");
         self.tracer
             .borrow_mut()
             .record_end_to_end("rate", start.elapsed())?;
@@ -150,6 +152,7 @@ impl SearchService {
         }
 
         let result = SearchResult { hotel_ids };
+        log::debug!("response sent");
         Ok(result)
     }
 }

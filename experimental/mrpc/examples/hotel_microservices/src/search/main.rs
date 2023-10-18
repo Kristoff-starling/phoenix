@@ -123,9 +123,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
     }).unwrap(); 
     
+    log::info!("Search initialization complete, listening...");
     let _ = geo_proxy.join().unwrap();
     let _ = rate_proxy.join().unwrap();
     let _ = frontend_receiver.join().unwrap();
-    log::info!("Search initialization complete, listening...");
     Ok(())
 }
