@@ -1,35 +1,36 @@
 version: "3"
 services:
   hotel_frontend:
-    image: hotel_service:single
+    image: kristoffstarling/hotel_service:multi
     container_name: 'hotel_frontend'
     hostname: host_frontend
     ports:
     - '2345:22'
+    - '5000:5000'
     command: '/usr/sbin/sshd -D'
   hotel_search:
-    image: hotel_service:single
+    image: kristoffstarling/hotel_service:multi
     container_name: 'hotel_search'
     hostname: host_search
     ports:
     - '2346:22'
     command: '/usr/sbin/sshd -D'
   hotel_profile:
-    image: hotel_service:single
+    image: kristoffstarling/hotel_service:multi
     container_name: 'hotel_profile'
     hostname: host_profile
     ports:
     - '2347:22'
     command: '/usr/sbin/sshd -D'
   hotel_rate:
-    image: hotel_service:single
+    image: kristoffstarling/hotel_service:multi
     container_name: 'hotel_rate'
     hostname: host_rate
     ports:
     - '2348:22'
     command: '/usr/sbin/sshd -D'
   hotel_geo:
-    image: hotel_service:single
+    image: kristoffstarling/hotel_service:multi
     container_name: 'hotel_geo'
     hostname: host_geo
     ports:

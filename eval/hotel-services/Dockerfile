@@ -21,7 +21,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y \
         lsb-release \
         numactl \
         pkg-config \
-        libssl-dev
+        libssl-dev \
+        telnet \
+        vim
 
 RUN mkdir -p /var/run/sshd
 RUN passwd -d root
