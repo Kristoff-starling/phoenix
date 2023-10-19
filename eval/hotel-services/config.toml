@@ -2,8 +2,8 @@ workdir = "/root/phoenix"
 extra_path = "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [env]
-# RUST_BACKTRACE = "1"
-# RUST_LOG_STYLE = "never"
-# CARGO_TERM_COLOR = "never"
-PHOENIX_LOG = "info"
-# PHOENIX_PREFIX = "/tmp/phoenix"
+RUST_BACKTRACE = "1"
+RUST_LOG_STYLE = "never"
+CARGO_TERM_COLOR = "never"
+PHOENIX_LOG = "debug"
+PHOENIX_PREFIX = "/tmp/phoenix"
