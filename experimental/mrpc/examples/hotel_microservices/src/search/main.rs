@@ -122,7 +122,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok::<(), mrpc::Status>(())
             });
     }).unwrap(); 
-    
+                
     log::info!("Search initialization complete, listening...");
     let _ = geo_proxy.join().unwrap();
     let _ = rate_proxy.join().unwrap();

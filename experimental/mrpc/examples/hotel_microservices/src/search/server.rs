@@ -100,7 +100,7 @@ impl SearchService {
 
         log::trace!("nearby lat = {:.4}", request.lat);
         log::trace!("nearby lon = {:.4}", request.lon);
-        log::debug!("Receive request: lat = {:.4}, lon = {:.4}", request.lat, request.lon);
+        log::info!("Search receive request: lat = {:.4}, lon = {:.4}", request.lat, request.lon);
         let geo_req = GeoRequest {
             lat: request.lat,
             lon: request.lon,
@@ -152,7 +152,7 @@ impl SearchService {
         }
 
         let result = SearchResult { hotel_ids };
-        log::debug!("response sent");
+        log::info!("Search response sent, hotel_ids = {:?}", result.hotel_ids);
         Ok(result)
     }
 }
