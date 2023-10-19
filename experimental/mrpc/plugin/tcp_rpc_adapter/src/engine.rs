@@ -369,9 +369,11 @@ impl TcpRpcAdapterEngine {
     ) -> Result<Status, DatapathError> {
         let meta_ref = unsafe { &*meta_buf_ptr.as_meta_ptr() };
         let table = self.state.conn_table.borrow();
+        log::debug!("[{}:{}] getting conn_ctx...", file!(), line!());
         let conn_ctx = table
             .get(&meta_ref.conn_id)
             .ok_or(ResourceError::NotFound)?;
+        log::debug!("[{}:{}] got!", file!(), line!());
 
         let call_id = meta_ref.call_id;
         let sock_handle = conn_ctx.sock_handle;
@@ -420,10 +422,11 @@ impl TcpRpcAdapterEngine {
     ) -> Result<Status, DatapathError> {
         log::debug!("start send_standard!");
         let table = self.state.conn_table.borrow();
+        log::debug!("[{}:{}] getting conn_ctx...", file!(), line!());
         let conn_ctx = table
             .get(&meta_ref.conn_id)
             .ok_or(ResourceError::NotFound)?;
-
+        log::debug!("[{}:{}] got!", file!(), line!());
         let call_id = meta_ref.call_id;
         let sock_handle = conn_ctx.sock_handle;
 
@@ -473,7 +476,9 @@ impl TcpRpcAdapterEngine {
                 EngineTxMessage::ReclaimRecvBuf(conn_id, call_ids) => {
                     let sock_handle = {
                         let table = self.state.conn_table.borrow_mut();
+                        log::debug!("[{}:{}] getting conn_ctx...", file!(), line!());
                         let conn_ctx = table.get(&conn_id).ok_or(ResourceError::NotFound)?;
+                        log::debug!("[{}:{}] got", file!(), line!());
                         conn_ctx.sock_handle
                     };
                     // TODO(cjr): only handle the first element, fix it later
@@ -711,7 +716,9 @@ impl TcpRpcAdapterEngine {
     ) -> Result<(), DatapathError> {
         for handle in mr_handles {
             let table = self.state.recv_buffer_table.borrow();
+            log::debug!("[{}:{}] getting handle...", file!(), line!());
             let recv_buffer = table.get(handle).ok_or(ResourceError::NotFound)?;
+            log::debug!("[{}:{}] got!", file!(), line!());
 
             get_ops().post_recv(
                 sock_handle,
@@ -808,7 +815,9 @@ impl TcpRpcAdapterEngine {
 
                 //Marked socket as addresses mapped
                 let mut table = get_ops().state.sock_table.borrow_mut();
+                log::debug!("[{}:{}] getting handle...", file!(), line!());
                 let value = table.get_mut(sock_handle).ok_or(ApiError::NotFound)?;
+                log::debug!("[{}:{}] got!", file!(), line!());
                 value.1 = MappedAddrStatus::Mapped;
                 // insert resources after connection establishment
                 self.state
