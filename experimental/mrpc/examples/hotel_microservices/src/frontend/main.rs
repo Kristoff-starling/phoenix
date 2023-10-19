@@ -138,7 +138,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
     }).unwrap();
 
-    log::info!("Frontend initialization complete, listening...");
     let _ = search_proxy.join().unwrap();
     let _ = profile_proxy.join().unwrap();
     let _ = user_receiver.join().unwrap();
