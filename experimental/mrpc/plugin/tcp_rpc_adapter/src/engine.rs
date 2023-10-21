@@ -478,7 +478,7 @@ impl TcpRpcAdapterEngine {
                             table, conn_id
                         );
                         let conn_ctx = table.get(&conn_id).ok_or(ResourceError::NotFound)?;
-                        log::info!("[thread={}] got");
+                        log::info!("[thread={}] got", thread::current().name().unwrap());
                         conn_ctx.sock_handle
                     };
                     // TODO(cjr): only handle the first element, fix it later
@@ -833,7 +833,7 @@ impl TcpRpcAdapterEngine {
                 log::info!("Connect, addr: {:?}", addr);
                 let sock_handle = get_ops().connect(addr)?;
                 let (read_regions, fds) = self.prepare_recv_buffers(sock_handle)?;
-                log::info("[thread={}] insert {:?}", thread::current().name().unwrap(), sock_handle);
+                log::info!("[thread={}] insert {:?}", thread::current().name().unwrap(), sock_handle);
                 self.state
                     .conn_table
                     .borrow_mut()
