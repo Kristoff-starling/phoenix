@@ -313,7 +313,7 @@ fn start_ssh(
 
         cmd.arg("-oStrictHostKeyChecking=no")
             // .arg("-tt") // force allocating a tty
-            .arg("-oConnectTimeout=2")
+            .arg("-oConnectTimeout=10")
             .arg("-oConnectionAttempts=3")
             .arg("-p")
             .arg(port)
@@ -328,7 +328,7 @@ fn start_ssh(
                 extra_path_str,
                 env_str,
                 worker.bin,
-                worker.args
+                worker.args,
             ));
         } else {
             cmd.arg(format!(
