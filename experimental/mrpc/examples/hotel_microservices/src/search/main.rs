@@ -60,9 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (geo_tx, mut geo_rx) = mpsc::channel(32);
     let geo_thread_builder = thread::Builder::new().name("geo-proxy".to_string());
     let geo_proxy = geo_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
+        let _ = tokio::runtime::Builder::new_current_thread()
             .build().unwrap()
             .block_on(async {
                 log::info!("Connecting to geo server...");
@@ -84,9 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (rate_tx, mut rate_rx) = mpsc::channel(32);
     let rate_thread_builder = thread::Builder::new().name("rate-proxy".to_string());
     let rate_proxy = rate_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
+        let _ = tokio::runtime::Builder::new_current_thread()
             .build().unwrap()
             .block_on(async {
                 log::info!("Connecting to rate server...");
@@ -107,9 +103,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let frontend_thread_builder = thread::Builder::new().name("frontend-receiver".to_string());
     let frontend_receiver = frontend_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
+        let _ = tokio::runtime::Builder::new_current_thread()
             .build().unwrap()
             .block_on(async {
                 let service = SearchService::new(geo_tx, rate_tx, args.log_path);

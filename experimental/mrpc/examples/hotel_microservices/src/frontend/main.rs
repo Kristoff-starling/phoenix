@@ -64,9 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (search_tx, mut search_rx) = mpsc::channel(32);
     let search_thread_builder = thread::Builder::new().name("search-proxy".to_string());
     let search_proxy = search_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
+        let _ = tokio::runtime::Builder::new_current_thread()
             .build().unwrap()
             .block_on(async {
                 log::info!("Connecting to search server...");
@@ -88,9 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (profile_tx, mut profile_rx) = mpsc::channel(32);
     let profile_thread_builder = thread::Builder::new().name("profile-proxy".to_string());
     let profile_proxy = profile_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
+        let _ = tokio::runtime::Builder::new_current_thread()
             .build().unwrap()
             .block_on(async {
                 log::info!("Connecting to profile server...");
@@ -111,9 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let user_thread_builder = thread::Builder::new().name("user-receiver".to_string());
     let user_receiver = user_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
+        let _ = tokio::runtime::Builder::new_current_thread()
             .build().unwrap()
             .block_on(async {
                 let frontend = Arc::new(FrontendService::new(
