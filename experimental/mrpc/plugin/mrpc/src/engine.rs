@@ -1,6 +1,7 @@
 use std::mem;
 use std::path::PathBuf;
 use std::pin::Pin;
+use std::thread;
 
 use anyhow::{anyhow, Result};
 use futures::future::BoxFuture;
@@ -456,6 +457,7 @@ impl MrpcEngine {
                 // let mut timer = crate::timer::Timer::new();
 
                 // 10-40ns, mostly 10ns
+                log::info!("[thread={}] receive wr reclaim", thread::current().name().unwrap());
                 self.tx_outputs()[0]
                     .send(EngineTxMessage::ReclaimRecvBuf(*conn_id, *msg_call_ids))?;
 

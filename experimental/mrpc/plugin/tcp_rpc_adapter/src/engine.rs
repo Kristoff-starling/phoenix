@@ -5,6 +5,7 @@ use std::os::unix::prelude::{AsRawFd, RawFd};
 use std::pin::Pin;
 use std::ptr;
 use std::time::Duration;
+use std::thread;
 
 use anyhow::{anyhow, Result};
 use fnv::FnvHashMap;
@@ -369,11 +370,9 @@ impl TcpRpcAdapterEngine {
     ) -> Result<Status, DatapathError> {
         let meta_ref = unsafe { &*meta_buf_ptr.as_meta_ptr() };
         let table = self.state.conn_table.borrow();
-        log::debug!("[{}:{}] getting conn_ctx...", file!(), line!());
         let conn_ctx = table
             .get(&meta_ref.conn_id)
             .ok_or(ResourceError::NotFound)?;
-        log::debug!("[{}:{}] got!", file!(), line!());
 
         let call_id = meta_ref.call_id;
         let sock_handle = conn_ctx.sock_handle;
@@ -422,11 +421,9 @@ impl TcpRpcAdapterEngine {
     ) -> Result<Status, DatapathError> {
         log::debug!("start send_standard!");
         let table = self.state.conn_table.borrow();
-        log::debug!("[{}:{}] getting conn_ctx...", file!(), line!());
         let conn_ctx = table
             .get(&meta_ref.conn_id)
             .ok_or(ResourceError::NotFound)?;
-        log::debug!("[{}:{}] got!", file!(), line!());
         let call_id = meta_ref.call_id;
         let sock_handle = conn_ctx.sock_handle;
 
@@ -476,9 +473,12 @@ impl TcpRpcAdapterEngine {
                 EngineTxMessage::ReclaimRecvBuf(conn_id, call_ids) => {
                     let sock_handle = {
                         let table = self.state.conn_table.borrow_mut();
-                        log::debug!("[{}:{}] getting conn_ctx...", file!(), line!());
+                        log::info!("[thread={}] getting conn_ctx, conn_table = {:?}, conn_id = {:?}",
+                            thread::current().name().unwrap(),
+                            table, conn_id
+                        );
                         let conn_ctx = table.get(&conn_id).ok_or(ResourceError::NotFound)?;
-                        log::debug!("[{}:{}] got", file!(), line!());
+                        log::info!("[thread={}] got");
                         conn_ctx.sock_handle
                     };
                     // TODO(cjr): only handle the first element, fix it later
@@ -673,6 +673,7 @@ impl TcpRpcAdapterEngine {
                 get_ops().state.listener_table.borrow_mut().remove(&handle);
                 get_ops().state.sock_table.borrow_mut().remove(&handle);
                 get_ops().state.cq_table.borrow_mut().remove(&handle);
+                log::debug!("remove conn_id={:?}", wc.conn_id);
                 self.state.conn_table.borrow_mut().remove(&handle);
                 let msg = if wc.opcode == WcOpcode::Send {
                     // let rpc_id = RpcId::decode_u64(wc.wr_id);
@@ -820,6 +821,7 @@ impl TcpRpcAdapterEngine {
                 log::debug!("[{}:{}] got!", file!(), line!());
                 value.1 = MappedAddrStatus::Mapped;
                 // insert resources after connection establishment
+                log::info!("[thread={}] insert {:?}", thread::current().name().unwrap(), sock_handle);
                 self.state
                     .conn_table
                     .borrow_mut()
@@ -828,9 +830,10 @@ impl TcpRpcAdapterEngine {
                 Ok(CompletionKind::NewMappedAddrs)
             }
             Command::Connect(addr) => {
-                log::debug!("Connect, addr: {:?}", addr);
+                log::info!("Connect, addr: {:?}", addr);
                 let sock_handle = get_ops().connect(addr)?;
                 let (read_regions, fds) = self.prepare_recv_buffers(sock_handle)?;
+                log::info("[thread={}] insert {:?}", thread::current().name().unwrap(), sock_handle);
                 self.state
                     .conn_table
                     .borrow_mut()

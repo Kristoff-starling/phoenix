@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::thread;
 
 use phoenix_api::rpc::{CallId, MessageErased, RpcId, Token};
 use phoenix_api_mrpc::dp::{WorkRequest, RECV_RECLAIM_BS};
@@ -35,6 +36,7 @@ impl<T> Drop for RRefInner<T> {
 
         let conn_id = self.rpc_id.0;
         let reclaim_wr = WorkRequest::ReclaimRecvBuf(conn_id, msgs);
+        log::info!("[thread={}] wr reclaim send", thread::current().name().unwrap());
         MRPC_CTX.with(move |ctx| {
             let mut sent = false;
             while !sent {
