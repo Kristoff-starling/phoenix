@@ -473,12 +473,7 @@ impl TcpRpcAdapterEngine {
                 EngineTxMessage::ReclaimRecvBuf(conn_id, call_ids) => {
                     let sock_handle = {
                         let table = self.state.conn_table.borrow_mut();
-                        log::info!("[thread={}] getting conn_ctx, conn_table = {:?}, conn_id = {:?}",
-                            thread::current().name().unwrap(),
-                            table, conn_id
-                        );
                         let conn_ctx = table.get(&conn_id).ok_or(ResourceError::NotFound)?;
-                        log::info!("[thread={}] got", thread::current().name().unwrap());
                         conn_ctx.sock_handle
                     };
                     // TODO(cjr): only handle the first element, fix it later
@@ -717,9 +712,7 @@ impl TcpRpcAdapterEngine {
     ) -> Result<(), DatapathError> {
         for handle in mr_handles {
             let table = self.state.recv_buffer_table.borrow();
-            log::debug!("[{}:{}] getting handle...", file!(), line!());
             let recv_buffer = table.get(handle).ok_or(ResourceError::NotFound)?;
-            log::debug!("[{}:{}] got!", file!(), line!());
 
             get_ops().post_recv(
                 sock_handle,
@@ -816,12 +809,9 @@ impl TcpRpcAdapterEngine {
 
                 //Marked socket as addresses mapped
                 let mut table = get_ops().state.sock_table.borrow_mut();
-                log::debug!("[{}:{}] getting handle...", file!(), line!());
                 let value = table.get_mut(sock_handle).ok_or(ApiError::NotFound)?;
-                log::debug!("[{}:{}] got!", file!(), line!());
                 value.1 = MappedAddrStatus::Mapped;
                 // insert resources after connection establishment
-                log::info!("[thread={}] insert {:?}", thread::current().name().unwrap(), sock_handle);
                 self.state
                     .conn_table
                     .borrow_mut()
@@ -830,10 +820,9 @@ impl TcpRpcAdapterEngine {
                 Ok(CompletionKind::NewMappedAddrs)
             }
             Command::Connect(addr) => {
-                log::info!("Connect, addr: {:?}", addr);
+                log::debug!("Connect, addr: {:?}", addr);
                 let sock_handle = get_ops().connect(addr)?;
                 let (read_regions, fds) = self.prepare_recv_buffers(sock_handle)?;
-                log::info!("[thread={}] insert {:?}", thread::current().name().unwrap(), sock_handle);
                 self.state
                     .conn_table
                     .borrow_mut()
