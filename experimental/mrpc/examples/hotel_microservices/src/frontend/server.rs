@@ -31,7 +31,7 @@ use hotel_microservices::search::{NearbyRequest as SearchRequest, SearchResult};
 pub enum FrontendSearchCommand {
     Req {
         search_req: SearchRequest,
-        search_resp: oneshot::Sender<RRef<SearchResult>>,
+        search_resp: oneshot::Sender<SearchResult>,
     },
 }
 
@@ -39,7 +39,7 @@ pub enum FrontendSearchCommand {
 pub enum FrontendProfileCommand {
     Req {
         profile_req: ProfileRequest,
-        profile_resp: oneshot::Sender<RRef<ProfileResult>>,
+        profile_resp: oneshot::Sender<ProfileResult>,
     },
 }
 
@@ -183,7 +183,7 @@ impl FrontendService {
     }
 }
 
-fn geo_json_response(res: RRef<ProfileResult>) -> Result<String> {
+fn geo_json_response(res: ProfileResult) -> Result<String> {
     let mut hotels = Vec::with_capacity(res.hotels.len());
     for hotel in res.hotels.iter() {
         let id = hotel.id.as_str();
