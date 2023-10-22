@@ -72,9 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 while let Some(cmd) = search_rx.recv().await {
                     match cmd {
                         FrontendSearchCommand::Req { search_req, search_resp } => {
-                            log::info!("search-proxy receive request");
                             let nearby = search_client.nearby(search_req).await?;
-                            log::info!("search-proxy receive response");
                             let _ = search_resp.send(nearby.as_ref().clone());
                         }
                     }
@@ -94,9 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 while let Some(cmd) = profile_rx.recv().await {
                     match cmd {
                         FrontendProfileCommand::Req { profile_req, profile_resp } => {
-                            log::info!("profile-proxy receive request");
                             let result = profile_client.get_profiles(profile_req).await?;
-                            log::info!("profile-proxy receive response");
                             let _ = profile_resp.send(result.as_ref().clone());
                         }
                     }

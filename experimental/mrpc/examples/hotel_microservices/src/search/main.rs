@@ -68,9 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 while let Some(cmd) = geo_rx.recv().await {
                     match cmd {
                         SearchGeoCommand::Req { geo_req, geo_resp } => {
-                            log::info!("geo-proxy receive request");
                             let nearby = geo_client.nearby(geo_req).await?;
-                            log::info!("geo-proxy receive response");
                             let _ = geo_resp.send(nearby.as_ref().clone());
                         }
                     }
@@ -90,9 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 while let Some(cmd) = rate_rx.recv().await {
                     match cmd {
                         SearchRateCommand::Req { rate_req, rate_resp } => {
-                            log::info!("rate-proxy receive request");
                             let rates = rate_client.get_rates(rate_req).await?;
-                            log::info!("rate-proxy receive response");
                             let _ = rate_resp.send(rates.as_ref().clone());
                         }
                     }

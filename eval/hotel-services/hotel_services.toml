@@ -2,7 +2,7 @@ name = "hotel_microservices"
 description = "Run hotel_microservices"
 group = "hotel_microservices"
 timeout_secs = 6000
-start_delay = 60
+start_delay = 5
 
 [[worker]]
 host = "root@localhost"
