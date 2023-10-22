@@ -33,7 +33,7 @@ use hotel_microservices::search::{NearbyRequest as SearchRequest, SearchResult};
 pub enum SearchGeoCommand {
     Req {
         geo_req: GeoRequest,
-        geo_resp: oneshot::Sender<RRef<GeoResult>>,
+        geo_resp: oneshot::Sender<GeoResult>,
     },
 }
 
@@ -41,7 +41,7 @@ pub enum SearchGeoCommand {
 pub enum SearchRateCommand {
     Req {
         rate_req: RateRequest,
-        rate_resp: oneshot::Sender<RRef<RateResult>>,
+        rate_resp: oneshot::Sender<RateResult>,
     },
 }
 
