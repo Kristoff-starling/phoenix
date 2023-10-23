@@ -104,6 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let user_thread_builder = thread::Builder::new().name("user-receiver".to_string());
     let user_receiver = user_thread_builder.spawn(move || {
         let _ = tokio::runtime::Builder::new_current_thread()
+            .enable_io()
             .build().unwrap()
             .block_on(async {
                 let frontend = Arc::new(FrontendService::new(
