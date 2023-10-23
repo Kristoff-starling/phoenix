@@ -126,9 +126,7 @@ impl FrontendService {
         if self.search_tx.send(search_cmd).await.is_err() {
             log::error!("Frontend-Search channel failed");
         }
-        log::info!("frontend-search request sent");
         let result = search_resp_rx.await?;
-        log::info!("frontend-search response received");
         // let result = self.search_client.nearby(search_req).await?;
         // let mut resp_fut = self.search_client.nearby(search_req);
         // let result = loop {
@@ -157,9 +155,7 @@ impl FrontendService {
         if self.profile_tx.send(profile_cmd).await.is_err() {
             log::error!("Frontend-Profile channel failed");
         }
-        log::info!("frontend-profile request sent");
         let result = profile_resp_rx.await?;
-        log::info!("frontend-profile response received");
         // let result = self.profile_client.get_profiles(profile_req).await?;
         // let mut resp_fut = self.profile_client.get_profiles(profile_req);
         // let result = loop {

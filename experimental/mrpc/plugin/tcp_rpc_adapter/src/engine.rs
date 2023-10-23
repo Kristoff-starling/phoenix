@@ -668,7 +668,6 @@ impl TcpRpcAdapterEngine {
                 get_ops().state.listener_table.borrow_mut().remove(&handle);
                 get_ops().state.sock_table.borrow_mut().remove(&handle);
                 get_ops().state.cq_table.borrow_mut().remove(&handle);
-                log::debug!("remove conn_id={:?}", wc.conn_id);
                 self.state.conn_table.borrow_mut().remove(&handle);
                 let msg = if wc.opcode == WcOpcode::Send {
                     // let rpc_id = RpcId::decode_u64(wc.wr_id);
