@@ -1,0 +1,17 @@
+{
+    "FrontendPort": 5000,
+    "GeoAddress": "h3",
+    "GeoPort": 8083,
+    "GeoMongoAddress": "mongodb://geo-db:27000",
+    "RateAddress": "h5",
+    "RatePort": 8084,
+    "RateMongoAddress": "mongodb://rate-db:27001",
+    "RateMemcAddress": "memcache://rate-mem:17001",
+    "ProfileAddress": "h4",
+    "ProfilePort": 8085,
+    "ProfileMongoAddress": "mongodb://profile-db:27002",
+    "ProfileMemcAddress": "memcache://profile-mem:17002",
+    "SearchAddress": "h6",
+    "SearchPort": 8086,
+    "LogPath": "/tmp/mrpc-eval/microservices"
+}
