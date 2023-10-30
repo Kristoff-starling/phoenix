@@ -104,7 +104,8 @@ for _, service_lats in request_latency_table.items():
         services_traces[service]["app_proc"].append(lat["app_proc"])
         services_traces[service]["network"].append(lat["network"])
         services_traces[service]["end_to_end"].append(lat["end_to_end"])
-    
+
+p50_latency = dict() 
 p95_latency = dict()
 p99_latency = dict()
 for service, traces in services_traces.items():
@@ -117,6 +118,11 @@ for service, traces in services_traces.items():
     traces["app_proc"] = traces["app_proc"][indices]
     traces["network"] = traces["network"][indices]
     
+    p50_latency[service] = {
+        "AppProc": np.percentile(traces["app_proc"], q=50) / 1000,
+        "Network": np.percentile(traces["network"], q=50) / 1000,
+        "EndToEnd": np.percentile(traces["end_to_end"], q=50) / 1000,
+    }
     p95_latency[service] = {
         "AppProc": np.percentile(traces["app_proc"], q=95) / 1000,
         "Network": np.percentile(traces["network"], q=95) / 1000,
@@ -128,6 +134,11 @@ for service, traces in services_traces.items():
         "EndToEnd": np.percentile(traces["end_to_end"], q=99) / 1000,
     }
 
+with open(os.path.join(DATA_DIR, "result_p50.csv"), "wt") as f:
+    writer = csv.writer(f)
+    for service, lats in p50_latency.items():
+        for cat, lat in lats.items():
+            writer.writerow([service, cat, lat])
 
 with open(os.path.join(DATA_DIR, "result_p95.csv"), "wt") as f:
     writer = csv.writer(f)
