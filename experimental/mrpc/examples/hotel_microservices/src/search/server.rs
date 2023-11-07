@@ -48,8 +48,8 @@ pub enum SearchRateCommand {
 pub struct SearchService {
     // geo_client: GeoClient,
     // rate_client: RateClient,
-    geo_tx: mpsc::Sender<SearchGeoCommand>,
-    rate_tx: mpsc::Sender<SearchRateCommand>,
+    geo_tx: mpsc::UnboundedSender<SearchGeoCommand>,
+    rate_tx: mpsc::UnboundedSender<SearchRateCommand>,
     log_path: Option<PathBuf>,
     tracer: RefCell<Tracer>,
 }
@@ -111,7 +111,7 @@ impl SearchService {
             geo_req: geo_req,
             geo_resp: geo_resp_tx
         };
-        if self.geo_tx.send(geo_cmd).await.is_err() {
+        if self.geo_tx.send(geo_cmd).is_err() {
             log::error!("Search-Geo channel failed");
         }
         let nearby = geo_resp_rx.await?;
@@ -133,7 +133,7 @@ impl SearchService {
             rate_req: rate_req,
             rate_resp: rate_resp_tx
         };
-        if self.rate_tx.send(rate_cmd).await.is_err() {
+        if self.rate_tx.send(rate_cmd).is_err() {
             log::error!("Search-Rate channel failed");
         }
         let rates = rate_resp_rx.await?;
@@ -152,7 +152,7 @@ impl SearchService {
 }
 
 impl SearchService {
-    pub fn new(geo: mpsc::Sender<SearchGeoCommand>, rate: mpsc::Sender<SearchRateCommand>, log_path: Option<PathBuf>) -> Self {
+    pub fn new(geo: mpsc::UnboundedSender<SearchGeoCommand>, rate: mpsc::UnboundedSender<SearchRateCommand>, log_path: Option<PathBuf>) -> Self {
         let mut tracer = Tracer::new();
         tracer.new_end_to_end_entry("geo");
         tracer.new_end_to_end_entry("rate");

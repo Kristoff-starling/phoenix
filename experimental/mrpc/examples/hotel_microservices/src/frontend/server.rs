@@ -9,8 +9,6 @@ use hyper::{Body, Request, Response, StatusCode};
 use minstant::Instant;
 use serde_json::json;
 
-use mrpc::RRef;
-
 use super::tracer::Tracer;
 
 pub mod hotel_microservices {
@@ -44,8 +42,8 @@ pub enum FrontendProfileCommand {
 }
 
 pub struct FrontendService {
-    search_tx: mpsc::Sender<FrontendSearchCommand>,
-    profile_tx: mpsc::Sender<FrontendProfileCommand>,
+    search_tx: mpsc::UnboundedSender<FrontendSearchCommand>,
+    profile_tx: mpsc::UnboundedSender<FrontendProfileCommand>,
     log_path: Option<PathBuf>,
     tracer: RefCell<Tracer>,
 }
@@ -55,7 +53,7 @@ unsafe impl Send for FrontendService {}
 unsafe impl Sync for FrontendService {}
 
 impl FrontendService {
-    pub fn new(search: mpsc::Sender<FrontendSearchCommand>, profile: mpsc::Sender<FrontendProfileCommand>, log_path: Option<PathBuf>) -> Self {
+    pub fn new(search: mpsc::UnboundedSender<FrontendSearchCommand>, profile: mpsc::UnboundedSender<FrontendProfileCommand>, log_path: Option<PathBuf>) -> Self {
         let mut tracer = Tracer::new();
         tracer.new_end_to_end_entry("search");
         tracer.new_end_to_end_entry("profile");
@@ -123,7 +121,7 @@ impl FrontendService {
             search_resp: search_resp_tx
         };
         let start = Instant::now();
-        if self.search_tx.send(search_cmd).await.is_err() {
+        if self.search_tx.send(search_cmd).is_err() {
             log::error!("Frontend-Search channel failed");
         }
         let result = search_resp_rx.await?;
@@ -152,7 +150,7 @@ impl FrontendService {
             profile_req: profile_req,
             profile_resp: profile_resp_tx
         };
-        if self.profile_tx.send(profile_cmd).await.is_err() {
+        if self.profile_tx.send(profile_cmd).is_err() {
             log::error!("Frontend-Profile channel failed");
         }
         let result = profile_resp_rx.await?;

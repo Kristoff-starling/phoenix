@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("args: {:?}", args);
     logging::init_env_log("RUST_LOG", "info");
 
-    let (geo_tx, mut geo_rx) = mpsc::channel(32);
+    let (geo_tx, mut geo_rx) = mpsc::unbounded_channel();
     let geo_thread_builder = thread::Builder::new().name("geo-proxy".to_string());
     let geo_proxy = geo_thread_builder.spawn(move || {
         let _ = tokio::runtime::Builder::new_current_thread()
@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
     }).unwrap();
 
-    let (rate_tx, mut rate_rx) = mpsc::channel(32);
+    let (rate_tx, mut rate_rx) = mpsc::unbounded_channel();
     let rate_thread_builder = thread::Builder::new().name("rate-proxy".to_string());
     let rate_proxy = rate_thread_builder.spawn(move || {
         let _ = tokio::runtime::Builder::new_current_thread()

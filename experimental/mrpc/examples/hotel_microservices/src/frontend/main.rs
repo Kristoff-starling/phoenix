@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("args: {:?}", args);
     logging::init_env_log("RUST_LOG", "info");
 
-    let (search_tx, mut search_rx) = mpsc::channel(32);
+    let (search_tx, mut search_rx) = mpsc::unbounded_channel();
     let search_thread_builder = thread::Builder::new().name("search-proxy".to_string());
     let search_proxy = search_thread_builder.spawn(move || {
         let _ = tokio::runtime::Builder::new_current_thread()
@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
     }).unwrap();
 
-    let (profile_tx, mut profile_rx) = mpsc::channel(32);
+    let (profile_tx, mut profile_rx) = mpsc::unbounded_channel();
     let profile_thread_builder = thread::Builder::new().name("profile-proxy".to_string());
     let profile_proxy = profile_thread_builder.spawn(move || {
         let _ = tokio::runtime::Builder::new_current_thread()
