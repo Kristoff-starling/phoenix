@@ -1228,6 +1228,7 @@ dependencies = [
  "anyhow",
  "async-ctrlc",
  "chrono",
+ "crossbeam",
  "csv",
  "env_logger",
  "futures",
