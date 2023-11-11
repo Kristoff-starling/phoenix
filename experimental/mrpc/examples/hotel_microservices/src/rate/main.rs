@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use structopt::StructOpt;
+use futures::FutureExt;
 
 #[path = "../config.rs"]
 pub mod config;
@@ -33,9 +34,13 @@ pub struct Args {
     pub config: Option<PathBuf>,
     #[structopt(long)]
     pub log_path: Option<PathBuf>,
+    #[structopt(short, long, default_value = "10")]
+    pub threads: u16,
+    #[structopt(short, long, default_value = "10")]
+    pub proxy_threads: u16,
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = Args::from_args();
     if let Some(path) = &args.config {
@@ -46,6 +51,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.memc = config.rate_memc_addr;
         args.port = config.rate_port;
         args.log_path = Some(config.log_path.join("rate.csv"));
+        args.threads = config.threads;
+        args.proxy_threads = config.proxy_threads;
     }
     eprintln!("args: {:?}", args);
     logging::init_env_log("RUST_LOG", "info");
@@ -60,12 +67,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     memc_client.set_write_timeout(Some(Duration::from_secs(2)))?;
     log::info!("Successful");
 
-    let service = RateService::new(database, memc_client, args.log_path);
-    let signal = async_ctrlc::CtrlC::new()?;
-    log::info!("Rate initialization complete, listening...");
-    mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port))?
-        .add_service(RateServer::new(service))
-        .serve_with_graceful_shutdown(signal)
-        .await?;
+    std::thread::scope(|s| {
+        let mut join_handles = Vec::new();
+        let signal = async_ctrlc::CtrlC::new()
+            .map_err(|err| mrpc::Status::internal(err.to_string()))
+            .unwrap().shared();
+        for i in 0..args.threads {
+            let tid = i;
+            let log_path = args.log_path.clone();
+            let database = database.clone();
+            let memc_client = memc_client.clone();
+            let signal = signal.clone();
+            let search_receiver = s.spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .build().unwrap()
+                    .block_on(async {
+                        let service = RateService::new(database, memc_client, log_path);
+                        mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port + tid as u16))?
+                            .add_service(RateServer::new(service))
+                            .serve_with_graceful_shutdown(signal)
+                            .await?;
+                        Ok::<(), mrpc::Status>(())
+                    }).unwrap();
+            });
+            join_handles.push(search_receiver);
+        }
+        log::info!("Rate initialization complete, listening...");
+    });
+    
     Ok(())
 }

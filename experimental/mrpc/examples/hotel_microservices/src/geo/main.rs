@@ -3,6 +3,7 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use structopt::StructOpt;
+use futures::FutureExt;
 
 #[path = "../config.rs"]
 pub mod config;
@@ -30,6 +31,10 @@ pub struct Args {
     pub config: Option<PathBuf>,
     #[structopt(long)]
     pub log_path: Option<PathBuf>,
+    #[structopt(short, long, default_value = "10")]
+    pub threads: u16,
+    #[structopt(short, long, default_value = "10")]
+    pub proxy_threads: u16,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -42,6 +47,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.db = config.geo_mongo_addr;
         args.port = config.geo_port;
         args.log_path = Some(config.log_path.join("geo.csv"));
+        args.threads = config.threads;
+        args.proxy_threads = config.proxy_threads;
     }
     eprintln!("args: {:?}", args);
     logging::init_env_log("RUST_LOG", "info");
@@ -50,12 +57,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database = initialize_database(args.db).await?;
     log::info!("Successful");
 
-    let service = GeoService::new(database, args.log_path).await?;
-    let signal = async_ctrlc::CtrlC::new()?;
-    log::info!("Geo initialization complete, listening...");
-    mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port))?
-        .add_service(GeoServer::new(service))
-        .serve_with_graceful_shutdown(signal)
-        .await?;
+    std::thread::scope(|s| {
+        let signal = async_ctrlc::CtrlC::new()
+            .map_err(|err| mrpc::Status::internal(err.to_string()))
+            .unwrap().shared();
+        let mut join_handles = Vec::new();
+        for i in 0..args.threads {
+            let tid = i;
+            let log_path = args.log_path.clone();
+            let database = database.clone();
+            let signal = signal.clone();
+            let search_receiver = s.spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .build().unwrap()
+                    .block_on(async {
+                        let service = GeoService::new(database, log_path)
+                            .await
+                            .map_err(|err| mrpc::Status::internal(err.to_string()))?;
+                        mrpc::stub::LocalServer::bind(format!("0.0.0.0:{}", args.port + tid as u16))?
+                            .add_service(GeoServer::new(service))
+                            .serve_with_graceful_shutdown(signal)
+                            .await?;
+                        Ok::<(), mrpc::Status>(())
+                    }).unwrap();
+            });
+            join_handles.push(search_receiver);
+        }
+        log::info!("Geo initialization complete, listening...");
+    });
+
+ 
     Ok(())
 }
