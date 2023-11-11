@@ -6,10 +6,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use std::thread;
+use crossbeam::channel::unbounded;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::Server;
 use structopt::StructOpt;
+use futures::FutureExt;
 
 #[path = "../config.rs"]
 pub mod config;
@@ -42,6 +44,10 @@ pub struct Args {
     pub config: Option<PathBuf>,
     #[structopt(long)]
     pub log_path: Option<PathBuf>,
+    #[structopt(short, long, default_value = "10")]
+    pub threads: u16,
+    #[structopt(short, long, default_value = "10")]
+    pub proxy_threads: u16,
 }
 
 #[tokio::main]
@@ -57,80 +63,115 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.profile_addr = config.profile_addr;
         args.profile_port = config.profile_port;
         args.log_path = Some(config.log_path.join("frontend.csv"));
+        args.threads = config.threads;
+        args.proxy_threads = config.proxy_threads;
     }
     eprintln!("args: {:?}", args);
     logging::init_env_log("RUST_LOG", "info");
 
-    let (search_tx, mut search_rx) = mpsc::unbounded_channel();
-    let search_thread_builder = thread::Builder::new().name("search-proxy".to_string());
-    let search_proxy = search_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_current_thread()
-            .build().unwrap()
-            .block_on(async {
-                log::info!("Connecting to search server...");
-                let search_client = SearchClient::connect(format!("{}:{}", args.search_addr, args.search_port))?;
-                while let Some(cmd) = search_rx.recv().await {
-                    match cmd {
-                        FrontendSearchCommand::Req { search_req, search_resp } => {
-                            let nearby = search_client.nearby(search_req).await?;
-                            let _ = search_resp.send(nearby.as_ref().clone());
+    let (search_tx, search_rx) = unbounded();
+    let (profile_tx, profile_rx) = unbounded();
+
+    std::thread::scope(|s| {
+        let mut search_joinhandles = Vec::new();
+        for _si in 0..args.proxy_threads {
+            let search_rx = search_rx.clone();
+            let search_addr = args.search_addr.clone();
+            let search_proxy= s.spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .build().unwrap()
+                    .block_on(async {
+                        log::info!("Connecting to search server...");
+                        let mut sched = 0;
+                        let mut search_clients = Vec::new();
+                        for i in 0..args.threads {
+                            let search_client = SearchClient::connect(format!("{}:{}", search_addr, args.search_port + i as u16))?;
+                            search_clients.push(search_client);
                         }
-                    }
-                }
-                Ok::<(), mrpc::Status>(())
-            });
-    }).unwrap();
-
-    let (profile_tx, mut profile_rx) = mpsc::unbounded_channel();
-    let profile_thread_builder = thread::Builder::new().name("profile-proxy".to_string());
-    let profile_proxy = profile_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_current_thread()
-            .build().unwrap()
-            .block_on(async {
-                log::info!("Connecting to profile server...");
-                let profile_client = ProfileClient::connect(format!("{}:{}", args.profile_addr, args.profile_port))?;
-                while let Some(cmd) = profile_rx.recv().await {
-                    match cmd {
-                        FrontendProfileCommand::Req { profile_req, profile_resp } => {
-                            let result = profile_client.get_profiles(profile_req).await?;
-                            let _ = profile_resp.send(result.as_ref().clone());
+                        while let Some(cmd) = search_rx.recv().unwrap() {
+                            match cmd {
+                                FrontendSearchCommand::Req { search_req, search_resp } => {
+                                    let nearby = search_clients[sched].nearby(search_req).await?;
+                                    let _ = search_resp.send(nearby.as_ref().clone());
+                                    sched = (sched + 1) % args.threads as usize;
+                                }
+                            }
                         }
-                    }
-                }
-                Ok::<(), mrpc::Status>(())
+                        Ok::<(), mrpc::Status>(())
+                    }).unwrap();
             });
-    }).unwrap();
+            search_joinhandles.push(search_proxy);
+        }
 
-    let user_thread_builder = thread::Builder::new().name("user-receiver".to_string());
-    let user_receiver = user_thread_builder.spawn(move || {
-        let _ = tokio::runtime::Builder::new_current_thread()
-            .enable_io()
-            .build().unwrap()
-            .block_on(async {
-                let frontend = Arc::new(FrontendService::new(
-                    search_tx,
-                    profile_tx,
-                    args.log_path,
-                ));
-                let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
-                let make_service = make_service_fn(move |_conn| {
-                    let frontend = frontend.clone();
-                    let service = service_fn(move |req| dispatch_fn(frontend.clone(), req));
-                    async move { Ok::<_, Infallible>(service) }
-                });
-                let server = Server::bind(&addr).serve(make_service);
-                let signal = async_ctrlc::CtrlC::new()
-                    .map_err(|err| mrpc::Status::internal(err.to_string()))?;
-                let graceful = server.with_graceful_shutdown(signal);
-                if let Err(e) = graceful.await {
-                    log::error!("Server error: {}", e);
-                }
-                Ok::<(), mrpc::Status>(())
+        let mut profile_joinhandles = Vec::new();
+        for _pi in 0..args.proxy_threads {
+            let profile_rx = profile_rx.clone();
+            let profile_addr = args.profile_addr.clone();
+            let profile_proxy = s.spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .build().unwrap()
+                    .block_on(async {
+                        log::info!("Connecting to profile server...");
+                        let mut sched = 0;
+                        let mut profile_clients = Vec::new();
+                        for i in 0..args.threads {
+                            let profile_client = ProfileClient::connect(format!("{}:{}", profile_addr, args.profile_port + i as u16))?;
+                            profile_clients.push(profile_client);
+                        }
+                        while let Some(cmd) = profile_rx.recv().unwrap() {
+                            match cmd {
+                                FrontendProfileCommand::Req { profile_req, profile_resp } => {
+                                    let result = profile_clients[sched].get_profiles(profile_req).await?;
+                                    let _ = profile_resp.send(result.as_ref().clone());
+                                    sched = (sched + 1) % args.threads as usize;
+                                }
+                            }
+                        }
+                        Ok::<(), mrpc::Status>(())
+                    }).unwrap();
             });
-    }).unwrap();
+            profile_joinhandles.push(profile_proxy);
+        }
 
-    let _ = search_proxy.join().unwrap();
-    let _ = profile_proxy.join().unwrap();
-    let _ = user_receiver.join().unwrap();
+        let signal = async_ctrlc::CtrlC::new()
+            .map_err(|err| mrpc::Status::internal(err.to_string()))
+            .unwrap().shared();
+
+        let mut join_handles = Vec::new();
+        for i in 0..args.threads {
+            let tid = i;
+            let log_path = args.log_path.clone();
+            let search_tx = search_tx.clone();
+            let profile_tx = profile_tx.clone();
+            let signal = signal.clone();
+            let user_receiver = s.spawn(move || {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_io()
+                    .build().unwrap()
+                    .block_on(async {
+                        let frontend = Arc::new(FrontendService::new(
+                            search_tx,
+                            profile_tx,
+                            log_path,
+                        ));
+                        let addr = SocketAddr::from(([0, 0, 0, 0], args.port + tid as u16));
+                        let make_service = make_service_fn(move |_conn| {
+                            let frontend = frontend.clone();
+                            let service = service_fn(move |req| dispatch_fn(frontend.clone(), req));
+                            async move { Ok::<_, Infallible>(service) }
+                        });
+                        let server = Server::bind(&addr).serve(make_service);
+
+                        let graceful = server.with_graceful_shutdown(signal);
+                        if let Err(e) = graceful.await {
+                            log::error!("Server error: {}", e);
+                        }
+                        Ok::<(), mrpc::Status>(())
+                    }).unwrap();
+            });
+            join_handles.push(user_receiver);
+        }
+    });
+
     Ok(())
 }

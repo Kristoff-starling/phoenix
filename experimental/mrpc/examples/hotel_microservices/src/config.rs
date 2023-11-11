@@ -40,4 +40,9 @@ pub struct Config {
 
     #[serde(rename = "LogPath")]
     pub log_path: PathBuf,
+
+    #[serde(rename = "Threads")]
+    pub threads: u16,
+    #[serde(rename = "ProxyThreads")]
+    pub proxy_threads: u16,
 }
