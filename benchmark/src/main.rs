@@ -41,7 +41,7 @@ const fn default_start_delay() -> u64 {
     1
 }
 
-const fn default_ssh_port() -> size {
+const fn default_ssh_port() -> usize {
     22
 }
 

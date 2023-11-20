@@ -9,11 +9,11 @@ use rpc_hello::HelloRequest;
 use std::{thread, time::Duration, time::Instant};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = GreeterClient::connect("localhost:5000")?;
+    let client = GreeterClient::connect("rpc_echo_server:5000")?;
     let mut apple_count = 0;
     let mut banana_count = 0;
     let mut last_print_time = Instant::now();
-    let interval = Duration::from_secs(5);
+    let interval = Duration::from_secs(2);
     let mut i = 0;
     loop {
         i = i ^ 1;
