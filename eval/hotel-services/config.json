@@ -14,6 +14,6 @@
     "SearchAddress": "host_search",
     "SearchPort": 8383,
     "LogPath": "/tmp/mrpc-eval/microservices",
-    "Threads": 10,
-    "ProxyThreads": 10
+    "Threads": 3,
+    "ProxyThreads": 1
 }

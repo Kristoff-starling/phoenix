@@ -73,6 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (profile_tx, profile_rx) = unbounded();
 
     std::thread::scope(|s| {
+        log::info!("Connecting to search server...");
         let mut search_joinhandles = Vec::new();
         for _si in 0..args.proxy_threads {
             let search_rx = search_rx.clone();
@@ -81,7 +82,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::runtime::Builder::new_current_thread()
                     .build().unwrap()
                     .block_on(async {
-                        log::info!("Connecting to search server...");
                         let mut sched = 0;
                         let mut search_clients = Vec::new();
                         for i in 0..args.threads {
@@ -103,6 +103,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             search_joinhandles.push(search_proxy);
         }
 
+        log::info!("Connecting to profile server...");
         let mut profile_joinhandles = Vec::new();
         for _pi in 0..args.proxy_threads {
             let profile_rx = profile_rx.clone();
@@ -111,7 +112,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::runtime::Builder::new_current_thread()
                     .build().unwrap()
                     .block_on(async {
-                        log::info!("Connecting to profile server...");
                         let mut sched = 0;
                         let mut profile_clients = Vec::new();
                         for i in 0..args.threads {

@@ -69,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (rate_tx, rate_rx) = unbounded();
 
     std::thread::scope(|s| {
+        log::info!("Connecting to geo server...");
         let mut geo_joinhandles = Vec::new();
         for _gi in 0..args.proxy_threads {
             let geo_rx = geo_rx.clone();
@@ -77,7 +78,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::runtime::Builder::new_current_thread()
                     .build().unwrap()
                     .block_on(async {
-                        log::info!("Connecting to geo server...");
                         let mut sched = 0;
                         let mut geo_clients = Vec::new();
                         for i in 0..args.threads {
@@ -99,6 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             geo_joinhandles.push(geo_proxy);
         }
 
+        log::info!("Connecting to rate server...");
         let mut rate_joinhandles = Vec::new();
         for _ri in 0..args.proxy_threads {
             let rate_rx = rate_rx.clone();
@@ -107,7 +108,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::runtime::Builder::new_current_thread()
                     .build().unwrap()
                     .block_on(async {
-                        log::info!("Connecting to rate server...");
                         let mut sched = 0;
                         let mut rate_clients = Vec::new();
                         for i in 0..args.threads {
