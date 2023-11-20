@@ -1,0 +1,18 @@
+name = "rpc_echo"
+description = "Run rpc_echo"
+group = "rpc_echo"
+timeout_secs = 6000
+start_delay = 10
+
+[[worker]]
+host = "root@localhost"
+port = 2345
+bin = "rpc_echo_server"
+term = 2
+
+[[worker]]
+host = "root@localhost"
+port = 2346
+bin = "rpc_echo_client2"
+term = 2
+dependencies = [0]

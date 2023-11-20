@@ -21,6 +21,7 @@ pub mod tee;
 #[derive(Debug, Clone, Deserialize)]
 struct Config {
     workdir: path::PathBuf,
+    extra_path: String,
     env: toml::Value,
 }
 
@@ -40,9 +41,15 @@ const fn default_start_delay() -> u64 {
     1
 }
 
+const fn default_ssh_port() -> size {
+    22
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct WorkerSpec {
     host: String,
+    #[serde(default = "default_ssh_port")]
+    port: usize,
     bin: String,
     args: String,
     #[serde(default)]
@@ -247,6 +254,7 @@ fn start_ssh(
 ) -> impl FnOnce() {
     let benchmark_name = benchmark.name.clone();
     let host = worker.host.clone();
+    let worker_port = worker.port.clone().to_string();
     let output_dir = opt.output_dir.as_ref().map(|d| d.join(&benchmark_name));
     let debug_mode = opt.debug;
     let env_str = envs
@@ -260,6 +268,7 @@ fn start_ssh(
         Duration::from_secs(opt.global_timeout_secs)
     };
     let cargo_dir = config.workdir.clone();
+    let extra_path_dir = config.extra_path.clone();
     let dry_run = opt.dry_run;
     let silent = opt.silent;
     let logical_and = opt.logical_and;
@@ -268,7 +277,7 @@ fn start_ssh(
         // using stupid timers to enforce launch order.
         thread::sleep(delay);
 
-        let (ip, port) = (&host, "22");
+        let (ip, port) = (&host, &worker_port);
 
         let mut cmd = Command::new("ssh");
 
@@ -304,7 +313,7 @@ fn start_ssh(
 
         cmd.arg("-oStrictHostKeyChecking=no")
             // .arg("-tt") // force allocating a tty
-            .arg("-oConnectTimeout=2")
+            .arg("-oConnectTimeout=10")
             .arg("-oConnectionAttempts=3")
             .arg("-p")
             .arg(port)
@@ -315,18 +324,18 @@ fn start_ssh(
         if !debug_mode {
             cmd.arg(format!(
                 // "export PATH={} && cd {} && {} numactl -N 0 -m 0 cargo run --release --bin {} -- {}",
-                "export PATH={} && cd {} && {} target/release/{} {}",
-                env_path,
+                "cd {} && export PATH={} && {} target/phoenix/release/{} {}",
                 cargo_dir.display(),
+                extra_path_dir,
                 env_str,
                 worker.bin,
                 worker.args
             ));
         } else {
             cmd.arg(format!(
-                "export PATH={} && cd {} && {} numactl -N 0 -m 0 target/debug/{} {}",
-                env_path,
+                "cd {} && export PATH={} && && {} numactl -N 0 -m 0 target/debug/{} {}",
                 cargo_dir.display(),
+                extra_path_dir,
                 env_str,
                 worker.bin,
                 worker.args

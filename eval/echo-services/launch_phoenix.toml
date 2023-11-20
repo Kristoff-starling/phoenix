@@ -1,0 +1,16 @@
+name = "launch_phoenix"
+description = "Launch phoenix daemon"
+group = "launch_phoenix"
+timeout_secs = 6000
+
+[[worker]]
+host = "root@localhost"
+port = 2345
+bin = "phoenixos"
+args = "-c eval/echo-services/phoenix.toml"
+
+[[worker]]
+host = "root@localhost"
+port = 2346
+bin = "phoenixos"
+args = "-c eval/echo-services/phoenix.toml"

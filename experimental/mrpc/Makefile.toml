@@ -76,5 +76,13 @@ script = '''
 cargo build --release -p 'rpc_*' -p 'masstree_analytics' -p 'hotel_reservation'
 '''
 
+[tasks.build-rpc-echo]
+description = '''
+Build mRPC example app rpc_echo
+'''
+script = '''
+cargo build --release -p rpc_echo
+'''
+
 [tasks]
 remove-fingerprint4.alias = "remove-fingerprint"
