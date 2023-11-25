@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVICES=("client2" "server")
+SERVICES=("frontend" "server")
 
 for service in "${SERVICES[@]}"; do
     docker exec rpc_echo_$service rm -rf /root/phoenix/eval/echo-services

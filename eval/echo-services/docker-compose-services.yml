@@ -1,14 +1,15 @@
 version: "3"
 services:
   rpc_echo_client:
-    image: kristoffstarling/hotel_service:multi
-    container_name: 'rpc_echo_client2'
-    hostname: 'rpc_echo_client2'
+    image: kristoffstarling/rpc_echo:latest
+    container_name: 'rpc_echo_frontend'
+    hostname: 'rpc_echo_frontend'
     ports:
     - '2346:22'
+    - '7878:7878'
     command: '/usr/sbin/sshd -D'
   rpc_echo_server:
-    image: kristoffstarling/hotel_service:multi
+    image: kristoffstarling/rpc_echo:latest
     container_name: 'rpc_echo_server'
     hostname: 'rpc_echo_server'
     ports:

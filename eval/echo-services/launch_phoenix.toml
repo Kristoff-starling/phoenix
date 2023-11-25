@@ -1,7 +1,7 @@
 name = "launch_phoenix"
 description = "Launch phoenix daemon"
 group = "launch_phoenix"
-timeout_secs = 6000
+timeout_secs = 60000
 
 [[worker]]
 host = "root@localhost"
