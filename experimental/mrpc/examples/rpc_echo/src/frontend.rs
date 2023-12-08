@@ -24,7 +24,7 @@ use hyper::{Server, Body, Request, Response, StatusCode};
 pub enum Command {
     Req {
         req: HelloRequest,
-        resp: Sender<HelloReply>,
+        resp: Sender<String>,
     }
 }
 
@@ -78,8 +78,18 @@ fn send_proxy(rx: Receiver<Command>) -> Result<(), Box<dyn std::error::Error>> {
         let cmd = rx.recv();
         match cmd {
             Ok(Command::Req { req, resp }) => {
-                let hello_reply = smol::block_on(client.say_hello(req))?;
-                let _ = resp.send(hello_reply.as_ref().clone());
+                let hello_reply = smol::block_on(client.say_hello(req));
+                match hello_reply {
+                    Ok(reply) => {
+                        let reply_msg = String::from_utf8_lossy(&reply.message);
+                        let _ = resp.send(reply_msg.to_string());
+                    }
+                    Err(e) => {
+                        let err_msg = format!("Error {e}");
+                        let _ = resp.send(err_msg);
+                    }
+                }
+                // let _ = resp.send(hello_reply.as_ref().clone());
             }
             Err(_) => {
                 eprintln!("Command error {:?}", cmd);
@@ -95,7 +105,7 @@ async fn handle_request(
     let uri = request.uri().path();
     match uri {
         "/apple" | "/banana" => {
-            let req = HelloRequest { name: uri.into() };
+            let req = HelloRequest { name: uri[1..].into()};
             let (resp_tx, resp_rx) = unbounded();
             let cmd = Command::Req {
                 req: req,
@@ -104,12 +114,10 @@ async fn handle_request(
             if tx.send(cmd).is_err() {
                 eprintln!("channel error");
             }
-            let reply = resp_rx.recv().unwrap();
-            let reply_msg = String::from_utf8_lossy(&reply.message);
-            let msg = format!("{reply_msg}");
+            let reply_msg = resp_rx.recv().unwrap();
             let response = Response::builder()
                 .status(200)
-                .body(msg.into()).unwrap();
+                .body(reply_msg.into()).unwrap();
             Ok(response)
         }
         _ => {
@@ -122,35 +130,35 @@ async fn handle_request(
 }
 
 // Function to handle the connection, read the request, and send the response.
-fn handle_connection(mut stream: TcpStream, tx: Sender<Command>) -> Result<(), Box<dyn std::error::Error>> {
-    let mut buf_reader = BufReader::new(&mut stream);
-    let mut request_str = String::new();
-    buf_reader.read_line(&mut request_str)?;
+// fn handle_connection(mut stream: TcpStream, tx: Sender<Command>) -> Result<(), Box<dyn std::error::Error>> {
+//     let mut buf_reader = BufReader::new(&mut stream);
+//     let mut request_str = String::new();
+//     buf_reader.read_line(&mut request_str)?;
 
-    // Parse the request string and extract the URI.
-    let request_parts: Vec<&str> = request_str.trim().split_whitespace().collect();
-    let uri = request_parts[1];
+//     // Parse the request string and extract the URI.
+//     let request_parts: Vec<&str> = request_str.trim().split_whitespace().collect();
+//     let uri = request_parts[1];
 
-    // Connect to the Greeter service and send the HelloRequest.
-    let req = HelloRequest { name: uri.into() };
+//     // Connect to the Greeter service and send the HelloRequest.
+//     let req = HelloRequest { name: uri.into() };
 
-    let (resp_tx, resp_rx) = unbounded();
-    let cmd = Command::Req {
-        req: req,
-        resp: resp_tx,
-    };
-    if tx.send(cmd).is_err() {
-        eprintln!("channel error");
-    }
-    let reply = resp_rx.recv().unwrap();
+//     let (resp_tx, resp_rx) = unbounded();
+//     let cmd = Command::Req {
+//         req: req,
+//         resp: resp_tx,
+//     };
+//     if tx.send(cmd).is_err() {
+//         eprintln!("channel error");
+//     }
+//     let reply = resp_rx.recv().unwrap();
 
-    // Prepare and send the HTTP response.
-    let status_line = "HTTP/1.1 200 OK";
-    let content = String::from_utf8_lossy(&reply.message) + "\n";
-    let length = content.len();
+//     // Prepare and send the HTTP response.
+//     let status_line = "HTTP/1.1 200 OK";
+//     let content = String::from_utf8_lossy(&reply.message) + "\n";
+//     let length = content.len();
 
-    let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
+//     let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
 
-    stream.write_all(response.as_bytes())?;
-    Ok(())
-}
+//     stream.write_all(response.as_bytes())?;
+//     Ok(())
+// }
