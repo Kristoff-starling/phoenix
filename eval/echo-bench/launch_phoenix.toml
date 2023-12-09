@@ -4,7 +4,7 @@ group = "launch_phoenix"
 timeout_secs = 60000
 
 [[worker]]
-host = "root@rpc-echo-server.c.app-defined-networks.internalroot@rpc-echo"
+host = "root@rpc-echo-server.c.app-defined-networks.internal"
 port = 2345
 bin = "phoenixos"
 args = "-c eval/echo-bench/phoenix.toml"
