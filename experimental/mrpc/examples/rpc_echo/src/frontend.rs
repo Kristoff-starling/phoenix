@@ -103,30 +103,20 @@ async fn handle_request(
     tx: Sender<Command>
 ) -> Result<Response<Body>, hyper::Error> {
     let uri = request.uri().path();
-    match uri {
-        "/apple" | "/banana" => {
-            let req = HelloRequest { name: uri[1..].into()};
-            let (resp_tx, resp_rx) = unbounded();
-            let cmd = Command::Req {
-                req: req,
-                resp: resp_tx,
-            };
-            if tx.send(cmd).is_err() {
-                eprintln!("channel error");
-            }
-            let reply_msg = resp_rx.recv().unwrap();
-            let response = Response::builder()
-                .status(200)
-                .body(reply_msg.into()).unwrap();
-            Ok(response)
-        }
-        _ => {
-            eprintln!("Not found: {:?}", request);
-            let mut not_found = Response::new(Body::empty());
-            *not_found.status_mut() = StatusCode::NOT_FOUND;
-            Ok(not_found)
-        }
+    let req = HelloRequest { name: uri[1..].into()};
+    let (resp_tx, resp_rx) = unbounded();
+    let cmd = Command::Req {
+        req: req,
+        resp: resp_tx,
+    };
+    if tx.send(cmd).is_err() {
+        eprintln!("channel error");
     }
+    let reply_msg = resp_rx.recv().unwrap();
+    let response = Response::builder()
+        .status(200)
+        .body(reply_msg.into()).unwrap();
+    Ok(response)
 }
 
 // Function to handle the connection, read the request, and send the response.
