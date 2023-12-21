@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn send_proxy(rx: Receiver<Command>) -> Result<(), Box<dyn std::error::Error>> {
-    let client = GreeterClient::connect("rpc_echo_server:5000")?;
+    let client = GreeterClient::connect("h3.sigcomm.meshbench-pg0.clemson.cloudlab.us:5000")?;
 
     loop {
         let cmd = rx.recv();

@@ -5,16 +5,16 @@ timeout_secs = 60000
 start_delay = 5
 
 [[worker]]
-host = "root@rpc-echo-server.c.app-defined-networks.internal"
+host = "root@h3"
 port = 2345
 bin = "rpc_echo_server"
 args = ""
-term = 2
+term = 9
 
 [[worker]]
-host = "root@rpc-echo-frontend.c.app-defined-networks.internal"
+host = "root@h2"
 port = 2346
 bin = "rpc_echo_frontend"
 args = ""
-term = 2
+term = 9
 dependencies = [0]
